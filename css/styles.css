@@ -456,12 +456,15 @@ body.light .message { color: #9a6b00; }
   .game-main       { display: contents; }            /* Kinder ins Grid heben */
   .board-container { grid-area: board; overflow-y: auto; max-height: 100dvh; }
   .game-header     { grid-area: header; }
-  .dice-tray       { grid-area: dice; margin: 0; }
+  .dice-tray       { grid-area: dice; margin: 0; gap: 6px 12px; }
+  /* Kompaktere Würfel: beide Gruppen passen ohne Überlauf in die schmale
+     Steuerspalte, und das Tablett wird flacher (kein Gedränge mit "Würfeln"). */
+  .die             { width: 34px; height: 34px; font-size: 1rem; }
   .roll-btn        { grid-area: roll; display: block; }
   .action-bar      { grid-area: actions; margin: 0; flex-direction: column; }
   .commentary-box  { grid-area: comment; display: block; overflow-y: auto; }
-  /* Punktestand/Log-Spalte entfaellt im Querformat: Punkte stehen im Block-Kopf
-     und als Chip im Header, Hinweise/Ansagen laufen in die Kommentar-Box. */
+  /* Punktestand/Log-Spalte entfaellt im Querformat: Punkte stehen im Block-Kopf,
+     Hinweise/Ansagen laufen in die Kommentar-Box. */
   .sidebar         { display: none; }
   .message         { display: none; }
 
@@ -476,12 +479,12 @@ body.light .message { color: #9a6b00; }
      beim Scrollen die darunterliegenden Blöcke sauber ab. */
   .player-board.active { order: -1; position: sticky; top: 0; z-index: 2; }
 
-  /* Block als kompakte Einheit: Raster + side-panel nebeneinander (kein Umbruch,
-     der ihn zu hoch macht). Neben dem Raster nur Farb-Bonus + Joker (kompakt, voll
-     sichtbar); die Punkte-Aufschlüsselung entfällt hier (Gesamtpunkte stehen im
-     Block-Kopf und in der Punktestand-Spalte). */
-  .sheet { flex-wrap: nowrap; gap: 10px; }
-  .side-panel { min-width: 0; }
+  /* Block kompakt: Raster oben, darunter Farb-Bonus + Joker (NICHT mehr rechts
+     daneben - so ragt nichts unter die Steuerspalte). Die beiden Gruppen liegen
+     nebeneinander, um Höhe zu sparen; die Punkte-Aufschlüsselung entfällt hier
+     (Gesamtpunkte stehen im Block-Kopf). */
+  .sheet { flex-direction: column; flex-wrap: nowrap; gap: 6px; }
+  .side-panel { min-width: 0; display: flex; flex-direction: row; flex-wrap: wrap; gap: 14px; }
   .panel-title { margin: 4px 0 2px; }
   .bonus-box { width: 26px; }
   .totals { display: none; }
@@ -507,12 +510,9 @@ body.light .message { color: #9a6b00; }
   }
   .end-game-btn { margin: 0; width: 100%; align-self: stretch; padding: 8px 10px; }
   .status-bar { font-size: 0.9rem; padding: 2px 0; }
-  /* Punktestand-Chip im Header (frueher "am Zug"-Text). */
-  .turn-info {
-    align-self: flex-start; font-size: 0.85rem; font-weight: 800;
-    background: var(--accent); color: #1a1a1a;
-    border-radius: 999px; padding: 2px 10px;
-  }
+  /* Punktestand steht bereits im Block-Kopf (pb-score) - der Header-Chip waere
+     doppelt, daher ausgeblendet. Wer "am Zug" ist, zeigt der hervorgehobene Block. */
+  .turn-info { display: none; }
 
   /* Wuerfeln-Button: gut tappbarer Vollbreiten-Button. */
   .roll-btn {

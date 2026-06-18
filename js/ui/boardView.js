@@ -121,11 +121,16 @@ function renderSidePanel(sheet, onColorClick = null) {
   const panel = document.createElement('div');
   panel.className = 'side-panel';
 
-  // Farb-Bonus.
+  // Farb-Bonus (Titel + Reihe als kompakte Gruppe; im Querformat sitzen die
+  // Gruppen nebeneinander unter dem Block).
+  const bonusGroup = document.createElement('div');
+  bonusGroup.className = 'panel-group';
+  panel.appendChild(bonusGroup);
+
   const bonusTitle = document.createElement('div');
   bonusTitle.className = 'panel-title';
   bonusTitle.textContent = 'Farb-Bonus';
-  panel.appendChild(bonusTitle);
+  bonusGroup.appendChild(bonusTitle);
 
   const bonusRow = document.createElement('div');
   bonusRow.className = 'bonus-row';
@@ -158,13 +163,17 @@ function renderSidePanel(sheet, onColorClick = null) {
     }
     bonusRow.appendChild(box);
   }
-  panel.appendChild(bonusRow);
+  bonusGroup.appendChild(bonusRow);
 
-  // Joker-Felder ("!").
+  // Joker-Felder ("!") - eigene Gruppe (Titel + Reihe).
+  const jokerGroup = document.createElement('div');
+  jokerGroup.className = 'panel-group';
+  panel.appendChild(jokerGroup);
+
   const jokerTitle = document.createElement('div');
   jokerTitle.className = 'panel-title';
   jokerTitle.textContent = `Joker (${sheet.jokersRemaining()} übrig)`;
-  panel.appendChild(jokerTitle);
+  jokerGroup.appendChild(jokerTitle);
 
   const jokerRow = document.createElement('div');
   jokerRow.className = 'joker-row';
@@ -175,7 +184,7 @@ function renderSidePanel(sheet, onColorClick = null) {
     if (i < sheet.jokersUsed) box.classList.add('used');
     jokerRow.appendChild(box);
   }
-  panel.appendChild(jokerRow);
+  jokerGroup.appendChild(jokerRow);
 
   // Punkte-Uebersicht.
   const score = sheet.computeScore();
