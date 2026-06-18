@@ -60,6 +60,7 @@ export function renderSheet(sheet, options = {}) {
 
       const k = cellKey(r, c);
       if (sheet.isMarked(r, c)) {
+        cell.classList.add('marked');
         const x = document.createElement('span');
         x.className = 'mark';
         x.textContent = '✕';

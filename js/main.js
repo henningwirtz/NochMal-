@@ -15,7 +15,6 @@ const $ = (id) => document.getElementById(id);
 const playerCountSel = $('player-count');
 const slotsContainer = $('player-slots');
 const startBtn = $('start-btn');
-const restartBtn = $('restart-btn');
 
 // Slot-Zustand bleibt erhalten, wenn die Anzahl wechselt.
 const slots = [];
@@ -61,6 +60,12 @@ function renderSlots() {
 playerCountSel.addEventListener('change', renderSlots);
 renderSlots();
 
+function backToSetup() {
+  $('end-panel').classList.add('hidden');
+  $('game-screen').classList.add('hidden');
+  $('setup-screen').classList.remove('hidden');
+}
+
 const dom = {
   statusBar: $('status-bar'),
   turnInfo: $('turn-info'),
@@ -71,8 +76,8 @@ const dom = {
   scoreboard: $('scoreboard'),
   log: $('log'),
   gameScreen: $('game-screen'),
-  endScreen: $('end-screen'),
-  endContent: $('end-content'),
+  endPanel: $('end-panel'),
+  backToSetup,
 };
 
 startBtn.addEventListener('click', () => {
@@ -86,14 +91,9 @@ startBtn.addEventListener('click', () => {
   const game = new Game(configs, { soloMode });
 
   $('setup-screen').classList.add('hidden');
-  $('end-screen').classList.add('hidden');
+  dom.endPanel.classList.add('hidden');
   dom.gameScreen.classList.remove('hidden');
   dom.log.replaceChildren();
 
   runGame(game, dom);
-});
-
-restartBtn.addEventListener('click', () => {
-  $('end-screen').classList.add('hidden');
-  $('setup-screen').classList.remove('hidden');
 });

@@ -23,6 +23,7 @@ export async function runGame(game, dom) {
   while (!game.finished) {
     game.beginRound();
     setStatus(dom, `Wurf ${game.rollCount} · Aktiver Spieler: ${game.activePlayer.name}`);
+    announceRound(dom, `Wurf ${game.rollCount} · ${game.activePlayer.name} würfelt`);
 
     while (!game.isRoundComplete()) {
       const idx = game.currentChooserIndex();
@@ -61,22 +62,22 @@ async function aiTurn(game, idx, dom) {
   const player = game.players[idx];
   setStatus(dom, `${player.name} (KI) überlegt …`);
   renderDiceStatic(dom, game, idx);
-  await delay(450);
+  await delay(900);
 
   const move = chooseMove(player.sheet, game.availablePool(idx));
   if (!move) {
     game.submitPass(idx);
     announce(dom, `${player.name} (KI) passt.`);
-    await delay(200);
+    await delay(800);
     return;
   }
-  // Zug kurz auf dem eigenen Block der KI hervorheben.
-  renderBoards(dom, game, {
-    chooserIdx: idx,
-    focusIdx: idx,
-    highlight: new Set(move.cells.map(([r, c]) => `${r},${c}`)),
-  });
-  await delay(650);
+  // 1) Geplanten Zug auf dem eigenen Block der KI hervorheben (noch nicht gesetzt).
+  const highlight = new Set(move.cells.map(([r, c]) => `${r},${c}`));
+  setStatus(dom, `${player.name} (KI) kreuzt an: ${describeMove(move)}`);
+  renderBoards(dom, game, { chooserIdx: idx, focusIdx: idx, highlight });
+  await delay(1500);
+
+  // 2) Zug ausführen und die frisch gesetzten Felder kurz markiert stehen lassen.
   game.submitChoice(idx, {
     colorId: move.colorId,
     numberId: move.numberId,
@@ -85,6 +86,8 @@ async function aiTurn(game, idx, dom) {
     cells: move.cells,
   });
   announce(dom, `${player.name} (KI): ${describeMove(move)}`);
+  renderBoards(dom, game, { chooserIdx: idx, focusIdx: idx, highlight });
+  await delay(900);
   renderBoards(dom, game, { chooserIdx: idx });
 }
 
@@ -243,6 +246,14 @@ function announce(dom, text) {
   dom.log.prepend(line);
 }
 
+// Abschnitts-Trenner je Wurf - macht den Spielverlauf im Log nachvollziehbar.
+function announceRound(dom, text) {
+  const line = document.createElement('div');
+  line.className = 'log-line log-round';
+  line.textContent = `▶ ${text}`;
+  dom.log.prepend(line);
+}
+
 function showRoundLog(dom, log) {
   for (const ev of log) {
     if (ev.type === 'column') {
@@ -282,8 +293,29 @@ function soloLevel(score) {
 
 function showEnd(dom, game, solo = false) {
   const rows = game.finalScores();
-  dom.gameScreen.classList.add('hidden');
-  dom.endScreen.classList.remove('hidden');
+
+  // Spiel-Bildschirm bleibt sichtbar: Endwertung erscheint ueber den Bloecken,
+  // die ihren Endstand weiter anzeigen.
+  setStatus(dom, 'Spiel beendet');
+  dom.turnInfo.textContent = '';
+  dom.diceTray.replaceChildren();
+  dom.actionBar.replaceChildren();
+  dom.message.textContent = '';
+  renderBoards(dom, game, {});
+  renderScoreboard(dom, game);
+
+  const panel = dom.endPanel;
+  panel.replaceChildren();
+
+  const head = document.createElement('p');
+  head.className = 'winner-line';
+  if (solo) {
+    head.textContent = `Endstand: ${rows[0].total} Punkte`;
+  } else {
+    const winners = rows.filter((r) => r.isWinner).map((r) => r.player.name);
+    head.textContent = winners.length === 1 ? `🏆 Sieger: ${winners[0]}!` : `Gleichstand: ${winners.join(', ')}`;
+  }
+  panel.append(head);
 
   const table = document.createElement('table');
   table.className = 'end-table';
@@ -305,19 +337,21 @@ function showEnd(dom, game, solo = false) {
     tbody.append(tr);
   }
   table.append(tbody);
-
-  dom.endContent.replaceChildren(table);
+  panel.append(table);
 
   if (solo) {
     const lvl = document.createElement('p');
     lvl.className = 'solo-level';
     lvl.textContent = `Dein Level: ${soloLevel(rows[0].total)}`;
-    dom.endContent.append(lvl);
-  } else {
-    const winners = rows.filter((r) => r.isWinner).map((r) => r.player.name);
-    const head = document.createElement('p');
-    head.className = 'winner-line';
-    head.textContent = winners.length === 1 ? `Sieger: ${winners[0]}!` : `Gleichstand: ${winners.join(', ')}`;
-    dom.endContent.prepend(head);
+    panel.append(lvl);
   }
+
+  const btn = document.createElement('button');
+  btn.className = 'primary big';
+  btn.textContent = 'Neues Spiel';
+  btn.addEventListener('click', () => dom.backToSetup());
+  panel.append(btn);
+
+  panel.classList.remove('hidden');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
