@@ -45,8 +45,11 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
 - `js/ui/` – Rendering & Ablauf: `boardView.js` (`renderSheet` = ein Blatt),
   `flow.js` (`runGame`/`renderBoards` = alle Spieler-Blöcke gleichzeitig, KI-Züge,
   Log/Ansagen, inline Endwertung), `controls.js` (`humanTurn` = interaktiver Zug,
-  nur eigener Block anklickbar).
-- `js/main.js` – Setup-Bildschirm & Bootstrap; `backToSetup()` für „Neues Spiel".
+  nur eigener Block anklickbar; Rückgängig-Button + optionaler Zug-Timer),
+  `storage.js` (localStorage: Bestenliste `recordResults`/`getScores` und Setup-
+  Einstellungen `loadSettings`/`saveSettings`).
+- `js/main.js` – Setup-Bildschirm & Bootstrap; `backToSetup()` für „Neues Spiel";
+  rendert die Bestenliste und stellt zuletzt genutzte Einstellungen wieder her.
   `index.html`, `css/styles.css`.
 
 ### Konventionen
@@ -60,6 +63,10 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   liegt groß und dick darüber, das Feld wird abgedunkelt (`.cell.marked`) – so ist „schon
   angekreuzt" auch auf Sternfeldern eindeutig.
 - Spielende: kein eigener Bildschirm; die Endwertung erscheint inline im `#end-panel`
-  über den Blöcken (samt „Neues Spiel"-Button), die Blöcke bleiben sichtbar.
+  über den Blöcken (samt „Neues Spiel"-Button), die Blöcke bleiben sichtbar. Beim
+  Spielende werden alle Ergebnisse in die Bestenliste geschrieben.
 - Das Log (`#log`) trennt jeden Wurf mit einem `▶`-Marker (`announceRound`).
+- Optionaler Zug-Timer: `game.moveTimer` (Sekunden, 0 = aus); läuft je Mensch-Zug in
+  `controls.js`, bei Ablauf wird automatisch gepasst (`{ action:'pass', timedOut:true }`).
+- Setup merkt sich Spielernamen, Anzahl, KI-Stärke und Timer (localStorage).
 - Code-Kommentare und UI-Texte sind auf Deutsch.

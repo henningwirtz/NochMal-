@@ -287,3 +287,25 @@ button.die:not(.disabled):hover { transform: translateY(-2px); box-shadow: 0 4px
 .cell { transition: box-shadow .12s, outline-color .12s, filter .12s; }
 .cell.highlight, .cell.selected { cursor: pointer; }
 .cell.highlight:hover { filter: brightness(1.12); }
+
+/* ---------- Zug-Timer (Setup-Option + Anzeige) ---------- */
+.timer-row { display: flex; align-items: center; gap: 10px; }
+.check { display: flex; align-items: center; gap: 6px; color: var(--ink); }
+#timer-seconds { width: 84px; }
+.muted-inline { color: var(--muted); font-size: 0.85rem; }
+.move-timer {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 6px 12px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums;
+}
+.move-timer.low { color: #fff; background: #7a2a2a; border-color: #b34545; animation: timerPulse .8s ease-in-out infinite; }
+@keyframes timerPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+/* ---------- Bestenliste ---------- */
+.lb-head { display: flex; align-items: center; justify-content: space-between; }
+.link-btn { background: none; border: none; color: var(--muted); cursor: pointer; text-decoration: underline; font-size: 0.85rem; }
+.link-btn:hover { color: var(--ink); }
+.lb-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 6px; }
+.lb-table th, .lb-table td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); }
+.lb-table th { color: var(--muted); font-weight: 700; }
+.lb-table td strong { color: var(--accent); }
+.lb-empty { color: var(--muted); margin: 8px 0 0; }

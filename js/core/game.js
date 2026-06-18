@@ -25,7 +25,7 @@ import { Sheet } from './sheet.js';
 import { isValidPlacement } from './rules.js';
 
 export class Game {
-  constructor(playerConfigs, { soloMode = false, aiDifficulty = 'mittel' } = {}) {
+  constructor(playerConfigs, { soloMode = false, aiDifficulty = 'mittel', moveTimer = 0 } = {}) {
     // playerConfigs: [{ name, isHuman }]
     this.players = playerConfigs.map((p, i) => ({
       id: i,
@@ -35,6 +35,7 @@ export class Game {
     }));
     this.soloMode = soloMode;
     this.aiDifficulty = aiDifficulty;
+    this.moveTimer = moveTimer; // Sekunden je Mensch-Zug (0 = aus)
     this.activeIndex = 0;
     this.rollCount = 0;
 

@@ -6,6 +6,7 @@
 
 import { renderSheet } from './boardView.js';
 import { humanTurn } from './controls.js';
+import { recordResults } from './storage.js';
 import { chooseMove } from '../core/ai.js';
 import {
   COLOR_LABEL,
@@ -42,7 +43,7 @@ export async function runGame(game, dom) {
         const res = await humanTurn(game, idx, dom, (o) => renderBoards(dom, game, o));
         if (res.action === 'pass') {
           game.submitPass(idx);
-          announce(dom, `${player.name} passt.`);
+          announce(dom, res.timedOut ? `${player.name}: Zeit abgelaufen – gepasst.` : `${player.name} passt.`);
         } else {
           game.submitChoice(idx, res.choice);
           announce(dom, `${player.name}: ${describeMove(res.choice)}`);
@@ -122,7 +123,7 @@ async function runSolo(game, dom) {
       const res = await humanTurn(game, 0, dom, (o) => renderBoards(dom, game, o));
       if (res.action === 'pass') {
         game.submitPass(0);
-        announce(dom, `Wurf ${rolls}: gepasst.`);
+        announce(dom, res.timedOut ? `Wurf ${rolls}: Zeit abgelaufen – gepasst.` : `Wurf ${rolls}: gepasst.`);
       } else {
         game.submitChoice(0, res.choice);
         announce(dom, `Wurf ${rolls}: ${describeMove(res.choice)}`);
@@ -342,11 +343,23 @@ function showEnd(dom, game, solo = false) {
   // die ihren Endstand weiter anzeigen.
   setStatus(dom, 'Spiel beendet');
   dom.turnInfo.textContent = '';
+  if (dom.moveTimer) { dom.moveTimer.classList.add('hidden'); dom.moveTimer.textContent = ''; }
   dom.diceTray.replaceChildren();
   dom.actionBar.replaceChildren();
   dom.message.textContent = '';
   renderBoards(dom, game, {});
   renderScoreboard(dom, game);
+
+  // Ergebnisse in die Bestenliste schreiben.
+  const now = Date.now();
+  recordResults(rows.map((r) => ({
+    name: r.player.name,
+    score: r.total,
+    solo,
+    difficulty: game.aiDifficulty,
+    isHuman: r.player.isHuman,
+    date: now,
+  })));
 
   const panel = dom.endPanel;
   panel.replaceChildren();

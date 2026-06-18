@@ -58,10 +58,34 @@ export function humanTurn(game, playerIndex, dom, renderBoards) {
     }
 
     function finish(result) {
+      stopTimer();
       dom.diceTray.replaceChildren();
       dom.actionBar.replaceChildren();
       dom.message.textContent = '';
       resolve(result);
+    }
+
+    // --- Optionaler Zug-Timer ----------------------------------------------
+    let timerId = null;
+    let remaining = game.moveTimer || 0;
+    function stopTimer() {
+      if (timerId) { clearInterval(timerId); timerId = null; }
+      if (dom.moveTimer) { dom.moveTimer.classList.add('hidden'); dom.moveTimer.textContent = ''; }
+    }
+    function updateTimerDisplay() {
+      if (!dom.moveTimer) return;
+      dom.moveTimer.textContent = `⏱ ${remaining}s`;
+      dom.moveTimer.classList.toggle('low', remaining <= 5);
+    }
+    function startTimer() {
+      if (!remaining || !dom.moveTimer) return;
+      dom.moveTimer.classList.remove('hidden');
+      updateTimerDisplay();
+      timerId = setInterval(() => {
+        remaining -= 1;
+        updateTimerDisplay();
+        if (remaining <= 0) finish({ action: 'pass', timedOut: true });
+      }, 1000);
     }
 
     function onCellClick(r, c) {
@@ -160,6 +184,15 @@ export function humanTurn(game, playerIndex, dom, renderBoards) {
       confirm.disabled = !canConfirm;
       confirm.classList.add('primary');
 
+      const undo = button('↶ Rückgängig', () => {
+        if (state.selected.length) {
+          state.selected.pop();
+          dom.message.textContent = '';
+          redraw();
+        }
+      });
+      undo.disabled = state.selected.length === 0;
+
       const reset = button('Auswahl zurücksetzen', () => {
         state.colorId = null;
         state.numberId = null;
@@ -173,7 +206,7 @@ export function humanTurn(game, playerIndex, dom, renderBoards) {
       const pass = button('Passen', () => finish({ action: 'pass' }));
       pass.classList.add('pass');
 
-      dom.actionBar.append(confirm, reset, pass);
+      dom.actionBar.append(confirm, undo, reset, pass);
 
       // Hinweis, wenn Kombination unmoeglich.
       if (color && count && placements.length === 0) {
@@ -274,5 +307,6 @@ export function humanTurn(game, playerIndex, dom, renderBoards) {
     }
 
     redraw();
+    startTimer();
   });
 }
