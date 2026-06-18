@@ -310,6 +310,14 @@ button.die:not(.disabled):hover { transform: translateY(-2px); box-shadow: 0 4px
 .lb-table th { color: var(--muted); font-weight: 700; }
 .lb-table td strong { color: var(--accent); }
 .lb-empty { color: var(--muted); margin: 8px 0 0; }
+.lb-del {
+  background: #5a2a2a; color: #fff; border: none; border-radius: 6px;
+  width: 24px; height: 24px; cursor: pointer; line-height: 1; font-weight: 800;
+}
+.lb-del:hover { background: #7a3636; }
+.lb-tools { margin-top: 10px; }
+.icon-btn.small { width: 32px; height: 32px; font-size: 1rem; }
+.icon-btn.active { border-color: var(--accent); color: var(--accent); }
 
 /* ---------- Steuer-Buttons (Theme / Ton) ---------- */
 #top-controls { position: fixed; top: 10px; right: 12px; display: flex; gap: 8px; z-index: 50; }

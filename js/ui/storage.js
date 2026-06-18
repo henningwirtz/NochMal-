@@ -44,6 +44,15 @@ export function clearScores() {
   writeJSON(SCORES_KEY, []);
 }
 
+// Entfernt einen einzelnen Eintrag anhand seiner Position in der sortierten Liste.
+export function removeScoreAt(index) {
+  const list = getScores();
+  if (index >= 0 && index < list.length) {
+    list.splice(index, 1);
+    writeJSON(SCORES_KEY, list);
+  }
+}
+
 // --- Setup-Einstellungen ----------------------------------------------------
 export function loadSettings() {
   return readJSON(SETTINGS_KEY, null);

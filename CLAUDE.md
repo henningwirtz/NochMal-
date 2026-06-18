@@ -52,8 +52,8 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   `flow.js` (`runGame`/`renderBoards` = alle Spieler-Blöcke gleichzeitig, KI-Züge,
   Log/Ansagen, inline Endwertung), `controls.js` (`humanTurn` = interaktiver Zug,
   nur eigener Block anklickbar; Rückgängig-Button + optionaler Zug-Timer),
-  `storage.js` (localStorage: Bestenliste `recordResults`/`getScores`, Setup-
-  Einstellungen `loadSettings`/`saveSettings`, globale Präferenzen
+  `storage.js` (localStorage: Bestenliste `recordResults`/`getScores`/`removeScoreAt`/
+  `clearScores`, Setup-Einstellungen `loadSettings`/`saveSettings`, globale Präferenzen
   `loadPrefs`/`savePrefs`), `sound.js` (WebAudio-Effekte: `playRoll`/`playMark`/
   `playEnd`, `setMuted`/`isMuted` – keine externen Audiodateien).
 - `js/main.js` – Setup-Bildschirm & Bootstrap; `backToSetup()` für „Neues Spiel";
@@ -80,4 +80,6 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
 - Hell/Dunkel: `body.light` überschreibt die CSS-Variablen; Theme + Mute liegen in
   `prefs` (localStorage) und werden sofort beim Umschalten gespeichert.
 - Setup merkt sich Spielernamen, Anzahl, KI-Stärke, KI-Tempo und Timer (localStorage).
+- Bestenliste ist über das ⚙-Symbol bearbeitbar: schaltet einen Bearbeiten-Modus ein,
+  in dem einzelne Einträge (`removeScoreAt`) oder alle (`clearScores`) entfernt werden.
 - Code-Kommentare und UI-Texte sind auf Deutsch.

@@ -6,7 +6,7 @@
 import { Game } from './core/game.js';
 import { runGame } from './ui/flow.js';
 import { validateBoard } from './data/board.js';
-import { getScores, clearScores, loadSettings, saveSettings, loadPrefs, savePrefs } from './ui/storage.js';
+import { getScores, clearScores, removeScoreAt, loadSettings, saveSettings, loadPrefs, savePrefs } from './ui/storage.js';
 import { setMuted } from './ui/sound.js';
 
 // Spielplan beim Laden validieren (wirft bei Inkonsistenzen).
@@ -15,7 +15,7 @@ validateBoard();
 const $ = (id) => document.getElementById(id);
 
 // Versionsanzeige - hilft zu erkennen, ob die aktuelle (ungecachte) Version laeuft.
-const VERSION = '2026-06-18 · KI-Tempo, Hell/Dunkel, Sound';
+const VERSION = '2026-06-18 · Bestenliste bearbeitbar';
 const buildBadge = $('build-badge');
 if (buildBadge) buildBadge.textContent = `Stand: ${VERSION}`;
 
@@ -109,20 +109,29 @@ renderSlots();
 
 // --- Bestenliste -----------------------------------------------------------
 const DIFF_LABEL = { leicht: 'Leicht', mittel: 'Mittel', schwer: 'Schwer' };
+let editScores = false;
+
 function renderLeaderboard() {
   const box = $('leaderboard');
   const scores = getScores();
   box.replaceChildren();
+  $('edit-scores').classList.toggle('active', editScores);
+
   if (!scores.length) {
+    editScores = false;
+    $('edit-scores').classList.remove('active');
     const p = document.createElement('p');
     p.className = 'lb-empty';
     p.textContent = 'Noch keine Ergebnisse – spiel eine Partie!';
     box.append(p);
     return;
   }
+
   const table = document.createElement('table');
   table.className = 'lb-table';
-  table.innerHTML = '<thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th>Modus</th><th>Datum</th></tr></thead>';
+  const head = '<th>#</th><th>Spieler</th><th>Punkte</th><th>Modus</th><th>Datum</th>' +
+    (editScores ? '<th></th>' : '');
+  table.innerHTML = `<thead><tr>${head}</tr></thead>`;
   const tbody = document.createElement('tbody');
   scores.slice(0, 10).forEach((e, i) => {
     const tr = document.createElement('tr');
@@ -133,15 +142,36 @@ function renderLeaderboard() {
       `<td>${escapeHtml(e.name)}${e.isHuman ? '' : ' (KI)'}</td>` +
       `<td><strong>${e.score}</strong></td>` +
       `<td>${mode}</td><td>${date}</td>`;
+    if (editScores) {
+      const td = document.createElement('td');
+      const del = document.createElement('button');
+      del.className = 'lb-del';
+      del.textContent = '✕';
+      del.title = 'Diesen Eintrag entfernen';
+      del.addEventListener('click', () => { removeScoreAt(i); renderLeaderboard(); });
+      td.append(del);
+      tr.append(td);
+    }
     tbody.append(tr);
   });
   table.append(tbody);
   box.append(table);
+
+  if (editScores) {
+    const tools = document.createElement('div');
+    tools.className = 'lb-tools';
+    const clearAll = document.createElement('button');
+    clearAll.className = 'link-btn';
+    clearAll.textContent = 'Alle löschen';
+    clearAll.addEventListener('click', () => { clearScores(); renderLeaderboard(); });
+    tools.append(clearAll);
+    box.append(tools);
+  }
 }
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
-$('clear-scores').addEventListener('click', () => { clearScores(); renderLeaderboard(); });
+$('edit-scores').addEventListener('click', () => { editScores = !editScores; renderLeaderboard(); });
 renderLeaderboard();
 
 function backToSetup() {
