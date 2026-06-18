@@ -20,33 +20,46 @@ import { hasStar } from '../data/board.js';
 
 const DIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 
+// Schwierigkeitsgrade: skalieren, wie stark die KI strategisch bewertet.
+//   strat    - Gewicht der strategischen Terme (Spalten/Farben/Sterne/Mobilitaet)
+//   complete - Extra-Bonus fuers Abschliessen einer Spalte/Farbe
+//   joker    - Strafe je verbrauchtem Joker (knappe Ressource)
+//   jitter   - Zufallsrauschen auf die Bewertung (macht die KI fehleranfaelliger)
+export const DIFFICULTIES = ['leicht', 'mittel', 'schwer'];
+const CFG = {
+  leicht: { strat: 0.40, complete: 1, joker: 0.7, jitter: 3.0 },
+  mittel: { strat: 0.85, complete: 1.5, joker: 1.2, jitter: 1.0 },
+  schwer: { strat: 2.40, complete: 6, joker: 2.5, jitter: 0 },
+};
+
 // Bewertet eine konkrete Platzierung. Markiert temporaer und macht rueckgaengig.
-function evaluatePlacement(sheet, cells, color, jokersUsed) {
+function evaluatePlacement(sheet, cells, color, jokersUsed, cfg) {
   for (const [r, c] of cells) sheet.marks[r][c] = true;
 
-  let score = cells.length; // jedes angekreuzte Feld ist Fortschritt
+  const base = cells.length; // jedes angekreuzte Feld ist Fortschritt
+  let strat = 0;
 
   const cols = new Set(cells.map(([, c]) => c));
   for (const col of cols) {
     if (sheet.isColumnComplete(col)) {
-      score += sheet.columnTopStruck[col] ? COLUMN_BOTTOM[col] : COLUMN_TOP[col];
-      score += 2; // Spaltenabschluss extra belohnen
+      strat += sheet.columnTopStruck[col] ? COLUMN_BOTTOM[col] : COLUMN_TOP[col];
+      strat += cfg.complete; // Spaltenabschluss extra belohnen
     } else {
       let inCol = 0;
       for (let r = 0; r < GRID_ROWS; r++) if (sheet.marks[r][col]) inCol++;
-      score += inCol * 0.3; // Fortschritt Richtung Spaltenabschluss
+      strat += inCol * 0.3; // Fortschritt Richtung Spaltenabschluss
     }
   }
 
   if (sheet.isColorComplete(color)) {
-    score += sheet.colorFirstStruck[color] ? COLOR_BONUS_LATER : COLOR_BONUS_FIRST;
-    score += 2;
+    strat += sheet.colorFirstStruck[color] ? COLOR_BONUS_LATER : COLOR_BONUS_FIRST;
+    strat += cfg.complete;
   } else {
-    score += sheet.colorMarkedCount(color) * 0.05;
+    strat += sheet.colorMarkedCount(color) * 0.05;
   }
 
   for (const [r, c] of cells) {
-    if (hasStar(r, c)) score += STAR_PENALTY; // vermeidet -2 bei Spielende
+    if (hasStar(r, c)) strat += STAR_PENALTY; // vermeidet -2 bei Spielende
   }
 
   // Frontier: neue Anschlussmoeglichkeiten foerdern Beweglichkeit.
@@ -60,12 +73,11 @@ function evaluatePlacement(sheet, cells, color, jokersUsed) {
       }
     }
   }
-  score += frontier * 0.08;
+  strat += frontier * 0.08;
 
   for (const [r, c] of cells) sheet.marks[r][c] = false;
 
-  score -= jokersUsed * 1.5; // Joker sind knapp und am Ende +1 wert
-  return score;
+  return base + cfg.strat * strat - cfg.joker * jokersUsed;
 }
 
 // Liefert die moeglichen (color, jokers) bzw. (count, jokers) Auswahlen eines Wuerfels.
@@ -84,7 +96,9 @@ function countOptions(face, jokersRemaining) {
 
 // Waehlt den besten Zug. Rueckgabe: null (passen) oder
 // { colorId, numberId, color, count, cells, jokersUsed }.
-export function chooseMove(sheet, pool) {
+// difficulty: 'leicht' | 'mittel' | 'schwer' (Default: mittel).
+export function chooseMove(sheet, pool, difficulty = 'mittel') {
+  const cfg = CFG[difficulty] || CFG.mittel;
   let best = null;
   let bestScore = 0.0001; // nur echte (positive) Zuege spielen
 
@@ -97,7 +111,8 @@ export function chooseMove(sheet, pool) {
 
           const placements = legalPlacements(sheet, co.color, no.count);
           for (const cells of placements) {
-            const s = evaluatePlacement(sheet, cells, co.color, jokersUsed);
+            let s = evaluatePlacement(sheet, cells, co.color, jokersUsed, cfg);
+            if (cfg.jitter) s += Math.random() * cfg.jitter;
             if (s > bestScore) {
               bestScore = s;
               best = {

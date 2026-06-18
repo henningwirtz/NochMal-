@@ -25,7 +25,7 @@ import { Sheet } from './sheet.js';
 import { isValidPlacement } from './rules.js';
 
 export class Game {
-  constructor(playerConfigs, { soloMode = false } = {}) {
+  constructor(playerConfigs, { soloMode = false, aiDifficulty = 'mittel' } = {}) {
     // playerConfigs: [{ name, isHuman }]
     this.players = playerConfigs.map((p, i) => ({
       id: i,
@@ -34,6 +34,7 @@ export class Game {
       sheet: new Sheet(),
     }));
     this.soloMode = soloMode;
+    this.aiDifficulty = aiDifficulty;
     this.activeIndex = 0;
     this.rollCount = 0;
 

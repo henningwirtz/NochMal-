@@ -6,7 +6,8 @@ Hinweise für Claude Code beim Arbeiten in diesem Repository.
 
 Browser-Nachbau des Würfelspiels **NOCH MAL!** (Schmidt Spiele) – reines Vanilla
 JavaScript (ES-Module), **kein Build-Schritt**, keine Abhängigkeiten. Deutsche Oberfläche.
-Unterstützt Pass-and-Play (1–6 Spieler), heuristische KI-Gegner und die Solo-Variante.
+Unterstützt Pass-and-Play (1–6 Spieler), heuristische KI-Gegner (3 Schwierigkeitsgrade)
+und die Solo-Variante.
 
 ## Starten
 
@@ -38,7 +39,9 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   ändern = nur diese Datei anpassen.
 - `js/core/` – reine Logik, DOM-frei: `constants.js` (Farben, Würfel, Wertungstabellen),
   `dice.js`, `rules.js` (legale Platzierungen), `sheet.js` (ein Spielblatt + Wertung),
-  `game.js` (Rundenautomat), `ai.js` (Heuristik-KI, `chooseMove`).
+  `game.js` (Rundenautomat; Option `aiDifficulty`), `ai.js` (Heuristik-KI,
+  `chooseMove(sheet, pool, difficulty)`; Stufen `leicht`/`mittel`/`schwer` über `CFG`,
+  die die strategische Gewichtung skalieren).
 - `js/ui/` – Rendering & Ablauf: `boardView.js` (`renderSheet` = ein Blatt),
   `flow.js` (`runGame`/`renderBoards` = alle Spieler-Blöcke gleichzeitig, KI-Züge,
   Log/Ansagen, inline Endwertung), `controls.js` (`humanTurn` = interaktiver Zug,
@@ -50,10 +53,12 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
 - Farbcodes im Raster: `y`=gelb, `n`=grün, `b`=blau, `r`=rot/pink, `o`=orange.
 - Jeder Spieler hat ein eigenes `Sheet`; alle Blöcke sind gleichzeitig sichtbar, der
   aktive ist hervorgehoben. KI-Spieler ziehen vollautomatisch über `aiTurn` in `flow.js`
-  – bewusst mit Pausen, damit ihr Zug nachvollziehbar ist (Plan hervorheben → setzen).
-- Sternfelder: kleines Eck-Kennzeichen (★) oben links; ein gesetztes Kreuz (✕) liegt
-  groß in der Mitte, das Feld wird abgedunkelt (`.cell.marked`) – so ist „schon
-  angekreuzt" immer eindeutig.
+  – bewusst langsam und nachvollziehbar: Felder werden einzeln ausgewählt (wie ein
+  Mensch) und dann gemeinsam angekreuzt. Schwierigkeit kommt aus `game.aiDifficulty`.
+- Jeder Wurf startet mit einer kurzen Würfelanimation (`animateRoll`/`.die.rolling`).
+- Sternfelder: der Stern sitzt zentral im Feld (wie im Original); ein gesetztes Kreuz (✕)
+  liegt groß und dick darüber, das Feld wird abgedunkelt (`.cell.marked`) – so ist „schon
+  angekreuzt" auch auf Sternfeldern eindeutig.
 - Spielende: kein eigener Bildschirm; die Endwertung erscheint inline im `#end-panel`
   über den Blöcken (samt „Neues Spiel"-Button), die Blöcke bleiben sichtbar.
 - Das Log (`#log`) trennt jeden Wurf mit einem `▶`-Marker (`announceRound`).

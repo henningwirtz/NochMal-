@@ -87,8 +87,9 @@ startBtn.addEventListener('click', () => {
     isHuman: s.isHuman,
   }));
   const soloMode = count === 1;
+  const aiDifficulty = $('ai-difficulty').value;
 
-  const game = new Game(configs, { soloMode });
+  const game = new Game(configs, { soloMode, aiDifficulty });
 
   $('setup-screen').classList.add('hidden');
   dom.endPanel.classList.add('hidden');

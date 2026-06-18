@@ -13,6 +13,8 @@ import {
   COLUMN_LETTERS,
   JOKER,
   SOLO_MAX_ROLLS,
+  COLOR_DIE_FACES,
+  NUMBER_DIE_FACES,
 } from '../core/constants.js';
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -24,6 +26,8 @@ export async function runGame(game, dom) {
     game.beginRound();
     setStatus(dom, `Wurf ${game.rollCount} · Aktiver Spieler: ${game.activePlayer.name}`);
     announceRound(dom, `Wurf ${game.rollCount} · ${game.activePlayer.name} würfelt`);
+    renderBoards(dom, game, { chooserIdx: game.activeIndex });
+    await animateRoll(dom, game, game.activeIndex);
 
     while (!game.isRoundComplete()) {
       const idx = game.currentChooserIndex();
@@ -62,22 +66,27 @@ async function aiTurn(game, idx, dom) {
   const player = game.players[idx];
   setStatus(dom, `${player.name} (KI) überlegt …`);
   renderDiceStatic(dom, game, idx);
-  await delay(900);
+  await delay(1100);
 
-  const move = chooseMove(player.sheet, game.availablePool(idx));
+  const move = chooseMove(player.sheet, game.availablePool(idx), game.aiDifficulty);
   if (!move) {
     game.submitPass(idx);
     announce(dom, `${player.name} (KI) passt.`);
-    await delay(800);
+    await delay(900);
     return;
   }
-  // 1) Geplanten Zug auf dem eigenen Block der KI hervorheben (noch nicht gesetzt).
-  const highlight = new Set(move.cells.map(([r, c]) => `${r},${c}`));
-  setStatus(dom, `${player.name} (KI) kreuzt an: ${describeMove(move)}`);
-  renderBoards(dom, game, { chooserIdx: idx, focusIdx: idx, highlight });
-  await delay(1500);
 
-  // 2) Zug ausführen und die frisch gesetzten Felder kurz markiert stehen lassen.
+  // 1) Felder nacheinander auswählen - so wie ein Mensch sie einzeln anklickt.
+  setStatus(dom, `${player.name} (KI) kreuzt an: ${describeMove(move)}`);
+  const selected = new Set();
+  for (const [r, c] of move.cells) {
+    selected.add(`${r},${c}`);
+    renderBoards(dom, game, { chooserIdx: idx, focusIdx: idx, selected: new Set(selected) });
+    await delay(550);
+  }
+  await delay(550);
+
+  // 2) Auswahl gemeinsam ankreuzen und kurz markiert stehen lassen.
   game.submitChoice(idx, {
     colorId: move.colorId,
     numberId: move.numberId,
@@ -86,8 +95,9 @@ async function aiTurn(game, idx, dom) {
     cells: move.cells,
   });
   announce(dom, `${player.name} (KI): ${describeMove(move)}`);
+  const highlight = new Set(move.cells.map(([r, c]) => `${r},${c}`));
   renderBoards(dom, game, { chooserIdx: idx, focusIdx: idx, highlight });
-  await delay(900);
+  await delay(950);
   renderBoards(dom, game, { chooserIdx: idx });
 }
 
@@ -105,6 +115,7 @@ async function runSolo(game, dom) {
     setTurnInfo(dom, player, true);
     renderBoards(dom, game, { chooserIdx: 0 });
     renderScoreboard(dom, game);
+    await animateRoll(dom, game, 0);
 
     if (player.isHuman) {
       renderDiceStatic(dom, game, 0);
@@ -173,6 +184,39 @@ function renderBoards(dom, game, opts = {}) {
     card.appendChild(renderSheet(p.sheet, sheetOptions));
     dom.boardContainer.appendChild(card);
   }
+}
+
+// Kurze Wuerfelanimation: einige Frames mit zufaelligen Augen, dann die echten
+// (bereits in beginRound gewuerfelten) Wuerfel.
+async function animateRoll(dom, game, chooserIdx) {
+  for (let i = 0; i < 7; i++) {
+    renderDiceRolling(dom, game);
+    await delay(80);
+  }
+  renderDiceStatic(dom, game, chooserIdx);
+}
+function randFace(faces) {
+  return faces[Math.floor(Math.random() * faces.length)];
+}
+function renderDiceRolling(dom, game) {
+  dom.diceTray.replaceChildren();
+  const cg = document.createElement('div');
+  cg.className = 'dice-group';
+  cg.append(diceLabel('Farbwürfel'));
+  for (const die of game.dice.colorDice) {
+    const el = staticColorDie({ id: die.id, face: randFace(COLOR_DIE_FACES) }, true);
+    el.classList.add('rolling');
+    cg.append(el);
+  }
+  const ng = document.createElement('div');
+  ng.className = 'dice-group';
+  ng.append(diceLabel('Zahlenwürfel'));
+  for (const die of game.dice.numberDice) {
+    const el = staticNumberDie({ id: die.id, face: randFace(NUMBER_DIE_FACES) }, true);
+    el.classList.add('rolling');
+    ng.append(el);
+  }
+  dom.diceTray.append(cg, ng);
 }
 
 function renderDiceStatic(dom, game, chooserIdx) {
