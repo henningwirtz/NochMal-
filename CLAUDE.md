@@ -47,6 +47,14 @@ Erledigte Punkte hier als `[x]` markieren bzw. nach unten/„Erledigt" verschieb
   neu zu tippen, runden­übergreifend wiederverwendet. Avatar erscheint in Setup, Spiel
   und Bestenliste. → `storage.js` (Spieler-Stammliste persistieren), `main.js` (Setup:
   Auswahl/Anlegen/Zuweisen), `boardView.js`/`flow.js` (Anzeige).
+- **Schnellauswahl per Wischen/Mehrfachklick** – wenn ein Wert gewählt ist (z.B. gelbe 5)
+  und in ein Feld der passenden Farbgruppe geklickt wird, lassen sich mehrere zusammen-
+  hängende Felder in einem Rutsch markieren: entweder durch Drüberwischen mit Maus/Finger
+  (Drag bzw. `touchmove` über die gültigen Felder) oder durch direktes Auswählen der ganzen
+  Gruppe. Nur die regelkonform erreichbaren Felder werden mitgenommen; ungültige Ziele
+  werden übersprungen. → `controls.js` (Eingabe: `pointerdown`/`pointermove`/`pointerup`
+  bzw. `touchmove`, Auswahl-Sammeln), `rules.js` (gültige Felder der aktuellen Auswahl),
+  `boardView.js` (Hover-/Wisch-Hervorhebung der erfassten Felder).
 
 ### Ton / Sprache
 - **Niederländische Ansage** – optionale Sprachausgabe (Web Speech API, `nl-NL`), sagt
