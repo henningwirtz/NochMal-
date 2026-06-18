@@ -6,7 +6,7 @@
 // Joker werden VOR dem Aufruf aufgeloest (Farbe -> konkrete Farbe, ? -> 1..5).
 // ============================================================================
 
-import { GRID_ROWS, GRID_COLS, START_COL } from './constants.js';
+import { GRID_ROWS, GRID_COLS, START_COL, MAX_PER_TURN } from './constants.js';
 import { GRID } from '../data/board.js';
 
 const key = (r, c) => `${r},${c}`;
@@ -140,15 +140,20 @@ export function hasLegalPlacement(sheet, color, count) {
   return legalPlacements(sheet, color, count).length > 0;
 }
 
-// Lockere Pruefung fuer den Notizblock-Modus: beliebige unmarkierte Felder (Farbe und
-// Anzahl egal), solange sie zusammenhaengen und an Startspalte/bestehendes Kreuz andocken.
+// Lockere Pruefung fuer den Notizblock-Modus: das Ankreuzen ist unabhaengig von den
+// (real gewuerfelten) Wuerfeln, muss aber die NOCH-MAL!-Grundregeln einhalten:
+// zusammenhaengend, an Startspalte/bestehendes Kreuz verankert, EINE Farbe und
+// hoechstens 5 Felder (Zahlenwuerfel 1-5).
 export function isRelaxedPlacement(sheet, cells) {
   if (!Array.isArray(cells) || cells.length < 1) return false;
+  if (cells.length > MAX_PER_TURN) return false; // nie mehr als 5 in einem Zug
   const keys = new Set(cells.map(([r, c]) => key(r, c)));
   if (keys.size !== cells.length) return false; // keine Duplikate
+  const color = GRID[cells[0][0]][cells[0][1]];
   for (const [r, c] of cells) {
     if (!inBounds(r, c)) return false;
     if (sheet.isMarked(r, c)) return false;
+    if (GRID[r][c] !== color) return false; // nur eine Farbe pro Zug
   }
   return isConnected(cells) && isAnchored(sheet, cells);
 }

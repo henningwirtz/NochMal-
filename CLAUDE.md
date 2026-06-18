@@ -51,9 +51,11 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   ändern = nur diese Datei anpassen.
 - `js/core/` – reine Logik, DOM-frei: `constants.js` (Farben, Würfel, Wertungstabellen),
   `dice.js`, `rules.js` (legale Platzierungen; `isRelaxedPlacement` für den Notizblock-
-  Modus), `sheet.js` (ein Spielblatt + Wertung),
+  Modus: unabhängig von den Würfeln, aber regelkonform – zusammenhängend, verankert,
+  **nur eine Farbe pro Zug**, max. 5 Felder), `sheet.js` (ein Spielblatt + Wertung),
   `game.js` (Rundenautomat; Optionen `aiDifficulty`, `relaxed`; `submitMarks` kreuzt im
-  Notizblock-Modus frei erreichbare Felder ohne Würfel-Prüfung an), `ai.js` (Heuristik-KI,
+  Notizblock-Modus frei gewählte, regelkonform erreichbare Felder ohne Würfel-Prüfung an),
+  `ai.js` (Heuristik-KI,
   `chooseMove(sheet, pool, difficulty)`; Stufen `leicht`/`mittel`/`schwer` über `CFG`,
   die die strategische Gewichtung skalieren).
 - `js/ui/` – Rendering & Ablauf: `boardView.js` (`renderSheet` = ein Blatt),

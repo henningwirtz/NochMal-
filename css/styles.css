@@ -435,13 +435,16 @@ body.light .message { color: #9a6b00; }
      Board-Spalte passt - auch wenn die Steuerspalte auf ihre Mindestbreite schrumpft -
      und das Raster in die Höhe. 9 ≈ 7 Block-Reihen + Spaltenkopf + Spaltensumme;
      480 px ≈ Steuerspalte + Bonus/Joker-Panel + alle Paddings/Gaps. */
+  /* Bonus/Joker-Leiste sitzt im Querformat UNTER dem Block (nicht daneben), daher
+     konkurriert das Raster in der Breite nur noch mit der schmalen Steuerspalte.
+     Groessere Obergrenze + kleinerer Subtrahend => spuerbar groesserer Block. */
   :root {
-    --cell: clamp(13px, min((100vw - 480px) / 15, (100dvh - 96px) / 9), 26px);
+    --cell: clamp(14px, min((100vw - 240px) / 15, (100dvh - 96px) / 9), 30px);
   }
 
   #game-screen:not(.hidden) {
     display: grid;
-    grid-template-columns: 1fr minmax(200px, 300px); /* Block | Steuerspalte */
+    grid-template-columns: 1fr minmax(140px, 180px); /* Block | schmale Steuerspalte */
     grid-template-rows: auto auto auto auto 1fr;
     grid-template-areas:
       "board header"
@@ -456,9 +459,13 @@ body.light .message { color: #9a6b00; }
   .game-main       { display: contents; }            /* Kinder ins Grid heben */
   .board-container { grid-area: board; overflow-y: auto; max-height: 100dvh; }
   .game-header     { grid-area: header; }
-  .dice-tray       { grid-area: dice; margin: 0; gap: 6px 12px; }
-  /* Kompaktere Würfel: beide Gruppen passen ohne Überlauf in die schmale
-     Steuerspalte, und das Tablett wird flacher (kein Gedränge mit "Würfeln"). */
+  /* Würfel als sauberes 2×3-Raster: Farbreihe oben, Zahlenreihe exakt darunter.
+     Jede Gruppe ist ein 3-Spalten-Raster gleicher Würfelgröße, daher liegen die
+     Zahlenwürfel bündig unter den Farbwürfeln. Labels entfallen (Farbe vs. Zahl
+     ist optisch eindeutig), damit das Raster genau ausgerichtet ist. */
+  .dice-tray       { grid-area: dice; margin: 0; flex-direction: column; gap: 6px; }
+  .dice-group      { display: grid; grid-template-columns: repeat(3, 34px); gap: 6px; justify-content: start; }
+  .dice-label      { display: none; }
   .die             { width: 34px; height: 34px; font-size: 1rem; }
   .roll-btn        { grid-area: roll; display: block; }
   .action-bar      { grid-area: actions; margin: 0; flex-direction: column; }
@@ -473,11 +480,10 @@ body.light .message { color: #9a6b00; }
      die --cell-Formel oben garantiert, dass er passt. */
   .player-board { width: auto; max-width: none; overflow: visible; }
 
-  /* Aktiver (eigener) Block vollständig & fixiert: zuerst (order) und am oberen
-     Rand angeheftet (sticky); die übrigen Blöcke liegen darunter und werden durch
-     Runterscrollen sichtbar. .player-board hat background:var(--panel) und deckt
-     beim Scrollen die darunterliegenden Blöcke sauber ab. */
-  .player-board.active { order: -1; position: sticky; top: 0; z-index: 2; }
+  /* Aktiver (eigener) Block kommt zuerst (order); NICHT mehr angeheftet (sticky),
+     sonst verdeckte er den darunterliegenden KI-Block. So scrollt der Block-Bereich
+     normal und der KI-Block wird durch Runterscrollen vollständig sichtbar. */
+  .player-board.active { order: -1; }
 
   /* Block kompakt: Raster oben, darunter Farb-Bonus + Joker (NICHT mehr rechts
      daneben - so ragt nichts unter die Steuerspalte). Die beiden Gruppen liegen

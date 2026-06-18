@@ -114,7 +114,7 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
         if (sheet.isMarked(r, c)) return;
         const tentative = [...state.selected, [r, c]];
         if (!isRelaxedPlacement(sheet, tentative)) {
-          setHint('Nur erreichbare Felder: Startspalte H oder direkt neben einem Kreuz.');
+          setHint('Nur Felder einer Farbe, erreichbar ab Startspalte H oder neben einem Kreuz (max. 5).');
           return;
         }
         state.selected.push([r, c]);
