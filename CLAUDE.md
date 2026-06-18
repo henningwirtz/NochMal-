@@ -42,6 +42,19 @@ Erledigte Punkte hier als `[x]` markieren bzw. nach unten/„Erledigt" verschieb
 ### UI / Darstellung
 - **Quer-Modus optimieren** – Landscape-Layout, Block ohne Horizontal-Scroll.
   → `styles.css` (Media Queries `orientation: landscape`).
+- **Handy-Spielmodus optimieren** – durchgängig bedienbares Layout am Smartphone:
+  - *Handy quer für bessere Übersicht* – Querformat passt zum 15×7-Block-Format;
+    Landscape soll den verfügbaren Platz besser nutzen (ergänzt „Quer-Modus optimieren").
+  - *Alle wichtigen Buttons gleichzeitig sichtbar & bedienbar* – aktuell liegen
+    „Spiel beenden" (`#end-game-btn` im Header) sowie Hell/Dunkel und Ton an/aus
+    (`#top-controls`, fixed oben rechts) übereinander/zu nah beieinander. Buttons sollen
+    klar getrennt, gut tappbar und kollisionsfrei angeordnet sein.
+  - *Kein Scrollen für Aktionen* – Würfel, Aktionsleiste, Steuer-Buttons und der
+    relevante Blockausschnitt sollen ohne Scrollen erreichbar sein.
+  → `styles.css` (Media Queries `orientation: landscape` + `max-width`/`max-height`,
+  `#top-controls`, `.game-header`, `.end-game-btn`, `.action-bar`), `index.html`
+  (Anordnung `#top-controls` / `#end-game-btn` im `game-header`), ggf. `main.js`
+  (Buttons im Spiel-Header bündeln).
 - **Spieler-Stammliste mit Bildern/Emojis** – gespeicherte Liste bekannter Spieler
   (z.B. „Henning") mit fest zugewiesenem Bild/Emoji; im Setup auswählbar statt jedes Mal
   neu zu tippen, runden­übergreifend wiederverwendet. Avatar erscheint in Setup, Spiel
