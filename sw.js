@@ -5,7 +5,7 @@
 // zurück. Beim Installieren wird die App-Shell vorab gecacht (Offline-Start).
 // ============================================================================
 
-const CACHE = 'nochmal-v15';
+const CACHE = 'nochmal-v16';
 const ASSETS = [
   './',
   'index.html',
@@ -45,8 +45,10 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  // cache: 'reload' umgeht den HTTP-Cache des Browsers (GitHub Pages liefert
+  // ~10 Min max-age) - so ist online wirklich immer der frische Stand da.
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'reload' })
       .then((resp) => {
         const copy = resp.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
