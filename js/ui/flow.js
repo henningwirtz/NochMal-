@@ -222,6 +222,8 @@ function renderBoards(dom, game, opts = {}) {
     highlight = new Set(),
     selected = new Set(),
     onCellClick = null,
+    onColumnClick = null,
+    onColorClick = null,
   } = opts;
 
   dom.boardContainer.replaceChildren();
@@ -240,7 +242,7 @@ function renderBoards(dom, game, opts = {}) {
     card.appendChild(head);
 
     const sheetOptions = p.id === focusIdx
-      ? { interactive, highlight, selected, onCellClick }
+      ? { interactive, highlight, selected, onCellClick, onColumnClick, onColorClick }
       : {};
     card.appendChild(renderSheet(p.sheet, sheetOptions));
     dom.boardContainer.appendChild(card);

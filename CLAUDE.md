@@ -30,17 +30,27 @@ Erledigte Punkte hier als `[x]` markieren bzw. nach unten/„Erledigt" verschieb
 
 ### Spielregeln / Varianten
 - [x] **Modus-Auswahl beim Start** – auf der Startseite (oben im Setup) zwei Modus-Karten
-  (`.mode-select`/`.mode-card`, `index.html`): **A „Gegen die KI (Ein Gerät)"** = das
-  normale Spiel (KI-Gegner, alle Boards, strenge Validierung) und **B „Digitaler
-  Notizblock (Eigenes Handy)"** = ein einzelnes eigenes Board, keine KI, **lockere**
-  Validierung. Modus B ist ein 1-Spieler-Spiel (`relaxed:true`, **kein** `soloMode`):
-  weiter würfeln + normale Wertung/Spielende/Bestenliste (Label „Notizblock"), aber jedes
-  **erreichbare** Feld (Startspalte H oder neben einem Kreuz) frei ankreuzbar – Farbe und
-  Anzahl egal. KI-/Mehrspieler-Setup-Felder tragen `mode-a-only` und werden via
-  `body.mode-notepad` ausgeblendet; der Modus wird in `saveSettings({ mode })` gemerkt.
+  (`.mode-select`/`.mode-card`, `index.html`): **Gether** (`data-mode="a"`) = „Gegen die KI",
+  zusammen an **einem** Gerät (KI-Gegner, alle Boards, strenge Validierung) und **PvP**
+  (`data-mode="b"`) = „Digitaler Notizblock", jeder am **eigenen** Handy. PvP ist ein
+  1-Spieler-Spiel (`relaxed:true`, **kein** `soloMode`): weiter würfeln + normale Wertung/
+  Spielende/Bestenliste (Label „Notizblock"), aber jedes **erreichbare** Feld (Startspalte H
+  oder neben einem Kreuz) frei ankreuzbar – Farbe und Anzahl egal. KI-/Mehrspieler-Setup-
+  Felder tragen `mode-a-only` und werden via `body.mode-notepad` ausgeblendet; der Modus
+  wird in `saveSettings({ mode })` gemerkt.
   → `main.js` (`applyMode`, Start-Verzweigung, `renderSlots`), `game.js`
   (`relaxed`-Flag + `submitMarks`), `rules.js` (`isRelaxedPlacement`), `controls.js`
   (`redrawRelaxed`/freies `onCellClick`), `flow.js` (`submitMarks`-Zweig, `notepad`-Flag).
+- [x] **PvP-Boni + Spielende-Fix** – Im PvP sind **Spalten-Buchstaben** (über dem Block)
+  und **Farb-Bonus-Boxen** (unter dem Block) anklickbar: ein Klick heißt „ein anderer
+  Spieler hat das zuerst geschlossen" → Oberwert gestrichen (`strikeColumnByOther`/
+  `strikeColorByOther` in `game.js`; idempotent, stuft einen bereits voll vergebenen Wert
+  herab). Eigene **fertige** Spalten/Farben werden in `resolveRound` (`relaxed`-Zweig,
+  `_awardCompletedRelaxed`) automatisch gewertet – voll, oder reduziert falls gestrichen.
+  **Spielende grid-basiert** (beide Modi): 2 Farben vollständig (`completedColorGridCount`)
+  **oder** alle Spalten zu (`allColumnsComplete`) → sofort nach „Bestätigen" Ende + Einfrieren
+  (`sheet.js`-Helfer). → `boardView.js` (`onColumnClick`/`onColorClick`, `.clickable`/
+  `.struck`), `flow.js`/`controls.js` (Handler durchreichen/verdrahten), `styles.css`.
 - **Neue Blöcke (auswählbar)** – mehrere Spielpläne (offizielle Varianten + eigene),
   im Setup wählbar; Engine ist datengetrieben. → `board.js` (mehrere `RAW_GRID`/`STARS`),
   `main.js` (Auswahl im Setup), `storage.js` (Auswahl merken).

@@ -188,9 +188,52 @@ export class Game {
     this.pointer++;
   }
 
+  // --- PvP-Wertung & Strikes (Notizblock) ----------------------------------
+  // PvP: eigene fertige Spalten/Farben automatisch werten - voll, oder reduziert,
+  // falls vorher als "anderer war zuerst" gestrichen.
+  _awardCompletedRelaxed(sheet) {
+    for (let col = 0; col < GRID_COLS; col++) {
+      if (sheet.columnAward[col] === null && sheet.isColumnComplete(col)) {
+        sheet.awardColumn(col, !sheet.columnTopStruck[col]);
+      }
+    }
+    for (const color of COLOR_ORDER) {
+      if (sheet.colorAward[color] === undefined && sheet.isColorComplete(color)) {
+        sheet.awardColor(color, sheet.colorFirstStruck[color] ? COLOR_BONUS_LATER : COLOR_BONUS_FIRST);
+      }
+    }
+  }
+
+  // PvP: markiert, dass ein anderer Spieler die Spalte zuerst geschlossen hat -> nur noch
+  // der reduzierte Wert moeglich. Idempotent; stuft einen bereits voll vergebenen Wert herab.
+  strikeColumnByOther(playerIndex, col) {
+    const sheet = this.players[playerIndex].sheet;
+    sheet.strikeColumnTop(col);
+    if (sheet.columnAward[col] === COLUMN_TOP[col]) sheet.awardColumn(col, false);
+  }
+
+  strikeColorByOther(playerIndex, color) {
+    const sheet = this.players[playerIndex].sheet;
+    sheet.strikeColorFirst(color);
+    if (sheet.colorAward[color] === COLOR_BONUS_FIRST) sheet.awardColor(color, COLOR_BONUS_LATER);
+  }
+
   // --- Runde auswerten -----------------------------------------------------
   resolveRound() {
     if (!this.isRoundComplete()) throw new Error('Runde noch nicht abgeschlossen');
+
+    // PvP/Notizblock: keine Mehrspieler-"Erst-Claim"-Logik, nur die eigenen fertigen
+    // Spalten/Farben werten (voll oder reduziert je nach Strike).
+    if (this.relaxed) {
+      this._awardCompletedRelaxed(this.players[0].sheet);
+      if (this.players[0].sheet.completedColorGridCount() >= 2
+          || this.players[0].sheet.allColumnsComplete()) {
+        this.endTriggered = true;
+        this.finished = true;
+      }
+      this.activeIndex = (this.activeIndex + 1) % this.players.length;
+      return this.roundLog;
+    }
 
     // Spalten: alle Spieler, die eine Spalte neu (noch ungewertet) komplettiert
     // haben, ermitteln; Erst-Komplettierung im selben Wurf -> alle oberer Wert.
@@ -252,9 +295,11 @@ export class Game {
       });
     }
 
-    // Spielende: ein Spieler hat seine 2. komplette Farbe erreicht.
+    // Spielende: ein Spieler hat seine 2. Farbe vollstaendig angekreuzt ODER alle Spalten
+    // geschlossen (grid-basiert, damit es direkt nach dem Ankreuzen sicher greift).
     // (Im Solo-Spiel wird stattdessen ueber 30 Wuerfe gespielt - siehe flow.js.)
-    if (!this.soloMode && this.players.some((p) => p.sheet.completedColorCount() >= 2)) {
+    if (!this.soloMode && this.players.some(
+          (p) => p.sheet.completedColorGridCount() >= 2 || p.sheet.allColumnsComplete())) {
       this.endTriggered = true;
       this.finished = true;
     }

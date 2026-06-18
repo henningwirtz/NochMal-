@@ -123,6 +123,19 @@ export class Sheet {
     return Object.keys(this.colorAward).length;
   }
 
+  // Anzahl der vollstaendig angekreuzten Farben (grid-basiert, unabhaengig von der Wertung).
+  completedColorGridCount() {
+    return COLOR_ORDER.filter((c) => this.isColorComplete(c)).length;
+  }
+
+  // Sind alle Spalten geschlossen?
+  allColumnsComplete() {
+    for (let c = 0; c < GRID_COLS; c++) {
+      if (!this.isColumnComplete(c)) return false;
+    }
+    return true;
+  }
+
   // --- Sterne --------------------------------------------------------------
   uncrossedStars() {
     let n = 0;

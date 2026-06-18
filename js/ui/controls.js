@@ -179,6 +179,9 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
         highlight,
         selected: selectedSet,
         onCellClick,
+        // PvP: Buchstabe/Farbe antippen = "anderer Spieler war zuerst" -> nur reduziert.
+        onColumnClick: (col) => { game.strikeColumnByOther(playerIndex, col); redraw(); },
+        onColorClick: (color) => { game.strikeColorByOther(playerIndex, color); redraw(); },
       });
 
       // --- Aktionsleiste (Bestätigen, Passen, Rückgängig) ------------------

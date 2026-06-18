@@ -22,9 +22,15 @@ import { GRID, hasStar } from '../data/board.js';
 
 const cellKey = (r, c) => `${r},${c}`;
 
-// options: { interactive, highlight:Set, selected:Set, onCellClick(r,c) }
+// options: { interactive, highlight:Set, selected:Set, onCellClick(r,c),
+//            onColumnClick(col), onColorClick(color) }
+// onColumnClick/onColorClick werden nur im PvP/Notizblock gesetzt (Buchstaben/Boni
+// anklickbar: "anderer Spieler war zuerst" -> nur reduzierte Punkte).
 export function renderSheet(sheet, options = {}) {
-  const { interactive = false, highlight = new Set(), selected = new Set(), onCellClick } = options;
+  const {
+    interactive = false, highlight = new Set(), selected = new Set(), onCellClick,
+    onColumnClick = null, onColorClick = null,
+  } = options;
 
   const root = document.createElement('div');
   root.className = 'sheet';
@@ -34,12 +40,18 @@ export function renderSheet(sheet, options = {}) {
   gridArea.className = 'grid-area';
   gridArea.style.setProperty('--cols', GRID_COLS);
 
-  // Zeile 1: Spaltenbuchstaben.
+  // Zeile 1: Spaltenbuchstaben (im PvP anklickbar zum Streichen des Oberwerts).
   for (let c = 0; c < GRID_COLS; c++) {
     const letter = document.createElement('div');
     letter.className = 'col-letter';
     if (c === START_COL) letter.classList.add('start-col');
+    if (sheet.columnTopStruck[c]) letter.classList.add('struck');
     letter.textContent = COLUMN_LETTERS[c];
+    if (onColumnClick) {
+      letter.classList.add('clickable');
+      const col = c;
+      letter.addEventListener('click', () => onColumnClick(col));
+    }
     gridArea.appendChild(letter);
   }
 
@@ -83,7 +95,7 @@ export function renderSheet(sheet, options = {}) {
   root.appendChild(gridArea);
 
   // --- Seitliches Wertungspanel -------------------------------------------
-  root.appendChild(renderSidePanel(sheet));
+  root.appendChild(renderSidePanel(sheet, onColorClick));
 
   return root;
 }
@@ -105,7 +117,7 @@ function appendScoreRow(gridArea, values, sheet, which) {
   }
 }
 
-function renderSidePanel(sheet) {
+function renderSidePanel(sheet, onColorClick = null) {
   const panel = document.createElement('div');
   panel.className = 'side-panel';
 
@@ -140,6 +152,10 @@ function renderSidePanel(sheet) {
     }
     box.appendChild(first);
     box.appendChild(later);
+    if (onColorClick) {
+      box.classList.add('clickable');
+      box.addEventListener('click', () => onColorClick(color));
+    }
     bonusRow.appendChild(box);
   }
   panel.appendChild(bonusRow);
