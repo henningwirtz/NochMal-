@@ -23,7 +23,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 const $ = (id) => document.getElementById(id);
 
 // Versionsanzeige - hilft zu erkennen, ob die aktuelle (ungecachte) Version laeuft.
-const VERSION = '2026-06-19 · Querformat: größerer Block + 2×3-Würfel, KI-Block scrollbar, PvP: eine Farbe/Zug';
+const VERSION = '2026-06-19 · Querformat: Bonus/Joker nach oben, KI-Aktionen prominent, Beenden oben rechts, Joker-Auswahl entkoppelt, Sterne/Kreuze größer';
 const buildBadge = $('build-badge');
 if (buildBadge) buildBadge.textContent = `Stand: ${VERSION}`;
 

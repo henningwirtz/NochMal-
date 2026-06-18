@@ -76,7 +76,12 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   `styles.css` (`touch-action: manipulation`; ab iPhone-Breite ≤430 px passt der
   15-spaltige Block per `--cell: clamp(…, calc((100vw − 80px)/15), 27px)` komplett
   ohne Horizontal-Scroll, Safe-Area-Insets via `env(safe-area-inset-*)` für Notch/
-  Dynamic Island/Home-Indikator).
+  Dynamic Island/Home-Indikator). Querformat (`orientation: landscape` & `max-height: 600px`):
+  Grid mit Block links + schmaler Steuerspalte rechts; Steuerspalte von oben =
+  KI-Aktionen/Kommentar (prominent), Würfeln-Button, Würfel + Joker-Auswahl,
+  Aktionen, Zug-Timer. „Spiel beenden" sitzt fix oben rechts neben Theme/Ton.
+  In jedem Block stehen Farb-Bonus + Joker per `column-reverse` ÜBER dem Raster;
+  Sterne/Kreuze sind nur hier ~50 % größer (im Hochformat unverändert).
 
 ### Konventionen
 - Farbcodes im Raster: `y`=gelb, `n`=grün, `b`=blau, `r`=rot/pink, `o`=orange.
