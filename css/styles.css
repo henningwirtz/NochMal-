@@ -395,3 +395,64 @@ body.light .message { color: #9a6b00; }
   /* "Spiel beenden" als gut tappbarer Button in eigener Zeile. */
   .end-game-btn { width: 100%; margin-left: 0; padding: 10px 14px; }
 }
+
+/* ===========================================================================
+   Querformat am Handy (Landscape, geringe Höhe)
+   ---------------------------------------------------------------------------
+   Block bekommt Priorität (linke Spalte, volle Höhe); Würfel + Aktionen +
+   Steuer-Buttons als kompakte Spalte rechts daneben; Punktestand sofort
+   sichtbar, Log per Scrollen. Ziel: keine Scroll-Aktionen, kollisionsfreie
+   Buttons. `display: contents` auf `.game-main` hebt Block + Sidebar direkt
+   ins Grid des #game-screen (kein DOM-Umbau nötig).
+   =========================================================================== */
+@media (orientation: landscape) and (max-height: 600px) {
+  /* Zelle zusätzlich an die Landscape-Höhe binden: kein H-/V-Scroll des Blocks.
+     9 ≈ 7 Block-Reihen + Spaltenkopf + Spaltensumme; 320 px ≈ Steuerspalte +
+     Gaps + Body-/Block-Padding. */
+  :root {
+    --cell: clamp(15px, min((100vw - 320px) / 15, (100dvh - 96px) / 9), 28px);
+  }
+
+  #game-screen:not(.hidden) {
+    display: grid;
+    grid-template-columns: 1fr minmax(190px, 280px); /* Block | Steuerspalte */
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas:
+      "board header"
+      "board dice"
+      "board actions"
+      "board side";
+    gap: 8px;
+    height: 100dvh;
+    align-items: start;
+  }
+  .game-main       { display: contents; }            /* Kinder ins Grid heben */
+  .board-container { grid-area: board; overflow: auto; max-height: 100dvh; }
+  .game-header     { grid-area: header; }
+  .dice-tray       { grid-area: dice; margin: 0; }
+  .action-bar      { grid-area: actions; margin: 0; }
+  .message         { grid-area: actions; align-self: end; }
+  .sidebar         { grid-area: side; overflow: auto; min-width: 0; }
+
+  /* Endwertung über dem Block-Bereich (scrollbar), Blöcke bleiben sichtbar. */
+  .end-panel:not(.hidden) {
+    grid-area: board; align-self: start; overflow: auto;
+    max-height: 100dvh; z-index: 5;
+  }
+
+  /* Block kompakter: kleinere Kopf-/Summenzeilen, Stern/Kreuz angepasst. */
+  .col-letter, .col-score { height: 18px; font-size: 0.7rem; }
+  .cell .star { font-size: 0.95rem; }
+  .cell .mark { font-size: 1.25rem; -webkit-text-stroke-width: 1.2px; }
+
+  /* Buttons kollisionsfrei: Theme/Ton bleiben fix oben rechts, der
+     Header-Inhalt (inkl. "Spiel beenden") rutscht darunter weg. */
+  #top-controls { gap: 6px; }
+  .icon-btn { width: 34px; height: 34px; font-size: 1rem; }
+  .game-header {
+    flex-direction: column; align-items: stretch; gap: 6px;
+    padding-right: 80px;            /* Platz für die zwei fixen Icons */
+  }
+  .end-game-btn { margin: 0; width: 100%; align-self: stretch; padding: 8px 10px; }
+  .status-bar { font-size: 0.95rem; padding: 4px 8px; }
+}

@@ -5,7 +5,7 @@
 // zurück. Beim Installieren wird die App-Shell vorab gecacht (Offline-Start).
 // ============================================================================
 
-const CACHE = 'nochmal-v8';
+const CACHE = 'nochmal-v9';
 const ASSETS = [
   './',
   'index.html',

@@ -40,17 +40,21 @@ Erledigte Punkte hier als `[x]` markieren bzw. nach unten/„Erledigt" verschieb
   `boardView.js` (Pass-Felder anzeigen).
 
 ### UI / Darstellung
-- **Quer-Modus optimieren** – Landscape-Layout, Block ohne Horizontal-Scroll.
-  → `styles.css` (Media Queries `orientation: landscape`).
+- [x] **Quer-Modus optimieren** – Landscape-Layout, Block ohne Horizontal-Scroll.
+  *Erledigt:* Media Query `(orientation: landscape) and (max-height: 600px)` in
+  `styles.css` – `#game-screen` wird zum Grid (Block links voller Höhe, Würfel +
+  Aktionen + Sidebar als rechte Spalte via `display: contents` auf `.game-main`),
+  `--cell` zusätzlich höhenbegrenzt (kein H-/V-Scroll des Blocks).
 - **Handy-Spielmodus optimieren** – durchgängig bedienbares Layout am Smartphone:
-  - *Handy quer für bessere Übersicht* – Querformat passt zum 15×7-Block-Format;
-    Landscape soll den verfügbaren Platz besser nutzen (ergänzt „Quer-Modus optimieren").
-  - *Alle wichtigen Buttons gleichzeitig sichtbar & bedienbar* – aktuell liegen
-    „Spiel beenden" (`#end-game-btn` im Header) sowie Hell/Dunkel und Ton an/aus
-    (`#top-controls`, fixed oben rechts) übereinander/zu nah beieinander. Buttons sollen
-    klar getrennt, gut tappbar und kollisionsfrei angeordnet sein.
-  - *Kein Scrollen für Aktionen* – Würfel, Aktionsleiste, Steuer-Buttons und der
-    relevante Blockausschnitt sollen ohne Scrollen erreichbar sein.
+  - [x] *Handy quer für bessere Übersicht* – Querformat als zweispaltiges Grid
+    (Block | Steuerspalte), nutzt die Landscape-Breite. (**Hochformat noch offen.**)
+  - [x] *Alle wichtigen Buttons gleichzeitig sichtbar & bedienbar* – im Querformat
+    bleiben Hell/Dunkel + Ton (`#top-controls`) fix oben rechts, der Header-Inhalt
+    inkl. „Spiel beenden" rutscht via `padding-right` darunter weg → kollisionsfrei,
+    gut tappbar. (**Hochformat noch zu prüfen.**)
+  - [x] *Kein Scrollen für Aktionen* – Würfel, Aktionsleiste, Steuer-Buttons und
+    Block liegen im Landscape-Grid gleichzeitig sichtbar; nur das Log scrollt in
+    der Sidebar. (**Hochformat noch offen.**)
   → `styles.css` (Media Queries `orientation: landscape` + `max-width`/`max-height`,
   `#top-controls`, `.game-header`, `.end-game-btn`, `.action-bar`), `index.html`
   (Anordnung `#top-controls` / `#end-game-btn` im `game-header`), ggf. `main.js`
