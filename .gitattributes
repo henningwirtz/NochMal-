@@ -1,0 +1,5 @@
+# Shell-Skripte brauchen LF, sonst scheitert der Start auf macOS/Linux.
+*.command text eol=lf
+*.sh      text eol=lf
+# Windows-Batch braucht CRLF.
+*.bat     text eol=crlf
