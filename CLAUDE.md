@@ -48,8 +48,14 @@ Erledigte Punkte hier als `[x]` markieren bzw. nach unten/„Erledigt" verschieb
 - **Handy-Spielmodus optimieren** – durchgängig bedienbares Layout am Smartphone:
   - [x] *Handy quer für bessere Übersicht* – Querformat als zweispaltiges Grid
     (Block | Steuerspalte), nutzt die Landscape-Breite. Aktiver Block ist
-    vollständig & fixiert (sticky + `order:-1`), übrige Blöcke per Runterscrollen;
-    `--cell` so bemessen, dass Raster + side-panel nebeneinander komplett passen.
+    vollständig & fixiert (sticky + `order:-1`), übrige Blöcke per Runterscrollen.
+    Blöcke liegen **flach** auf der Seite (im Landscape `.player-board`
+    `overflow:visible; width:auto`, kein scrollbares Block-Fenster mehr, das das
+    Wertungs-Panel abschnitt). Neben dem Raster nur **Farb-Bonus + Joker** (kompakt,
+    voll sichtbar); die Punkte-Aufschlüsselung (`.totals`) ist im Querformat
+    ausgeblendet – Gesamtpunkte stehen im Block-Kopf und in der Punktestand-Spalte.
+    `--cell: clamp(13px, min((100vw−480px)/15, (100dvh−96px)/9), 26px)` so bemessen,
+    dass Raster + Panel garantiert in die Board-Spalte und Höhe passen.
     (**Hochformat noch offen.**)
   - [x] *Alle wichtigen Buttons gleichzeitig sichtbar & bedienbar* – im Querformat
     bleiben Hell/Dunkel + Ton (`#top-controls`) fix oben rechts, der Header-Inhalt

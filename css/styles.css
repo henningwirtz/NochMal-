@@ -406,12 +406,12 @@ body.light .message { color: #9a6b00; }
    ins Grid des #game-screen (kein DOM-Umbau nötig).
    =========================================================================== */
 @media (orientation: landscape) and (max-height: 600px) {
-  /* Zelle so wählen, dass Raster + side-panel in die linke Spaltenbreite und das
-     Raster in die Höhe passen -> aktiver Block komplett sichtbar.
-     9 ≈ 7 Block-Reihen + Spaltenkopf + Spaltensumme; 290 px ≈ Steuerspalte + Gaps
-     + Padding; 170 px ≈ side-panel (Bonus/Joker/Summen) neben dem Raster. */
+  /* Zelle so wählen, dass der ganze Block (Raster + Bonus/Joker-Panel daneben) in die
+     Board-Spalte passt - auch wenn die Steuerspalte auf ihre Mindestbreite schrumpft -
+     und das Raster in die Höhe. 9 ≈ 7 Block-Reihen + Spaltenkopf + Spaltensumme;
+     480 px ≈ Steuerspalte + Bonus/Joker-Panel + alle Paddings/Gaps. */
   :root {
-    --cell: clamp(14px, min((100vw - 290px - 170px) / 15, (100dvh - 90px) / 9), 26px);
+    --cell: clamp(13px, min((100vw - 480px) / 15, (100dvh - 96px) / 9), 26px);
   }
 
   #game-screen:not(.hidden) {
@@ -435,6 +435,11 @@ body.light .message { color: #9a6b00; }
   .message         { grid-area: actions; align-self: end; }
   .sidebar         { grid-area: side; overflow: auto; min-width: 0; }
 
+  /* Blöcke flach in die Seite integrieren: kein scrollbares Block-Fenster mehr (das
+     hat das Bonus/Joker-Panel rechts abgeschnitten). Der Block fließt vollständig,
+     die --cell-Formel oben garantiert, dass er passt. */
+  .player-board { width: auto; max-width: none; overflow: visible; }
+
   /* Aktiver (eigener) Block vollständig & fixiert: zuerst (order) und am oberen
      Rand angeheftet (sticky); die übrigen Blöcke liegen darunter und werden durch
      Runterscrollen sichtbar. .player-board hat background:var(--panel) und deckt
@@ -442,11 +447,14 @@ body.light .message { color: #9a6b00; }
   .player-board.active { order: -1; position: sticky; top: 0; z-index: 2; }
 
   /* Block als kompakte Einheit: Raster + side-panel nebeneinander (kein Umbruch,
-     der ihn zu hoch macht), Bonus/Summen schmaler. */
+     der ihn zu hoch macht). Neben dem Raster nur Farb-Bonus + Joker (kompakt, voll
+     sichtbar); die Punkte-Aufschlüsselung entfällt hier (Gesamtpunkte stehen im
+     Block-Kopf und in der Punktestand-Spalte). */
   .sheet { flex-wrap: nowrap; gap: 10px; }
   .side-panel { min-width: 0; }
-  .bonus-box { width: 28px; }
-  .totals { margin-top: 6px; padding: 6px 8px; }
+  .panel-title { margin: 4px 0 2px; }
+  .bonus-box { width: 26px; }
+  .totals { display: none; }
 
   /* Endwertung über dem Block-Bereich (scrollbar), Blöcke bleiben sichtbar. */
   .end-panel:not(.hidden) {
