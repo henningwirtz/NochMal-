@@ -23,6 +23,38 @@ Alternativen: `npx serve` oder die VS-Code-Erweiterung „Live Server".
 Im Setup Spieleranzahl wählen, je Spieler Name und **Mensch/KI** festlegen,
 dann **Spiel starten**. (1 Spieler = Solo-Variante.)
 
+## Auf dem Handy spielen
+
+Das Spiel ist eine **PWA** (installierbare Web-App) und für Touch/kleine Bildschirme
+optimiert. Es braucht eine Adresse, die per **HTTPS** erreichbar ist – am einfachsten
+kostenlos über **GitHub Pages**.
+
+### Schritt 1 – Veröffentlichen (einmalig, ~3 Min.)
+1. Auf GitHub das Repository öffnen → **Settings** → links **Pages**.
+2. Unter „Build and deployment" bei **Source** „Deploy from a branch" wählen,
+   **Branch** `main` und Ordner `/ (root)`, dann **Save**.
+3. Nach ein, zwei Minuten erscheint oben die öffentliche Adresse, etwa:
+   `https://<dein-name>.github.io/NochMal-/`
+4. Diese Adresse lässt sich sofort in jedem Browser öffnen – auch am Handy.
+
+### Schritt 2 – Aufs Handy holen
+- **Adresse teilen:** Den Link z. B. per Nachricht aufs Handy schicken und im
+  Handy-Browser öffnen. Fertig – sofort spielbar.
+
+### Schritt 3 – Als App installieren (optional, empfohlen)
+- **iPhone (Safari):** Seite öffnen → Teilen-Symbol → **„Zum Home-Bildschirm"** →
+  **Hinzufügen**. Es erscheint ein App-Icon; die App startet im Vollbild.
+- **Android (Chrome):** Seite öffnen → Menü (⋮) → **„App installieren"** bzw.
+  **„Zum Startbildschirm hinzufügen"**.
+
+Danach läuft das Spiel wie eine echte App – inklusive **Offline-Betrieb** (dank
+Service Worker). Updates werden bei bestehender Internetverbindung automatisch
+geladen; im Setup zeigt der kleine „Stand: …"-Hinweis die geladene Version.
+
+> Hinweis: Reines Öffnen der `index.html` per Doppelklick (`file://`) funktioniert
+> nicht – ES-Module und der Service Worker brauchen einen Server (lokal die
+> Startskripte, fürs Handy GitHub Pages o. Ä.).
+
 ## Spielregeln (Kurzfassung)
 
 Der aktive Spieler würfelt alle 6 Würfel und nimmt 1 Farb- + 1 Zahlenwürfel; die

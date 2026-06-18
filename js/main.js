@@ -12,10 +12,18 @@ import { setMuted } from './ui/sound.js';
 // Spielplan beim Laden validieren (wirft bei Inkonsistenzen).
 validateBoard();
 
+// Service Worker registrieren (PWA: installierbar + offline). Nur über http(s),
+// nicht über file:// - sonst schlägt die Registrierung fehl.
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* offline-Funktion optional */ });
+  });
+}
+
 const $ = (id) => document.getElementById(id);
 
 // Versionsanzeige - hilft zu erkennen, ob die aktuelle (ungecachte) Version laeuft.
-const VERSION = '2026-06-18 · Bestenliste bearbeitbar';
+const VERSION = '2026-06-18 · Handy/PWA';
 const buildBadge = $('build-badge');
 if (buildBadge) buildBadge.textContent = `Stand: ${VERSION}`;
 

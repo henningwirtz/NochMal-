@@ -7,7 +7,8 @@ Hinweise für Claude Code beim Arbeiten in diesem Repository.
 Browser-Nachbau des Würfelspiels **NOCH MAL!** (Schmidt Spiele) – reines Vanilla
 JavaScript (ES-Module), **kein Build-Schritt**, keine Abhängigkeiten. Deutsche Oberfläche.
 Unterstützt Pass-and-Play (1–6 Spieler), heuristische KI-Gegner (3 Schwierigkeitsgrade)
-und die Solo-Variante.
+und die Solo-Variante. Läuft als **PWA** (installierbar, offline, touch-optimiert) –
+am Handy via GitHub Pages, siehe README („Auf dem Handy spielen").
 
 ## Starten
 
@@ -57,8 +58,13 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   `loadPrefs`/`savePrefs`), `sound.js` (WebAudio-Effekte: `playRoll`/`playMark`/
   `playEnd`, `setMuted`/`isMuted` – keine externen Audiodateien).
 - `js/main.js` – Setup-Bildschirm & Bootstrap; `backToSetup()` für „Neues Spiel";
-  rendert die Bestenliste, stellt zuletzt genutzte Einstellungen wieder her und
-  steuert Hell/Dunkel-Theme + Ton (oben rechts). `index.html`, `css/styles.css`.
+  rendert die Bestenliste, stellt zuletzt genutzte Einstellungen wieder her, steuert
+  Hell/Dunkel-Theme + Ton (oben rechts) und registriert den Service Worker.
+  `index.html`, `css/styles.css`.
+- PWA: `manifest.json` (Metadaten/Icons), `sw.js` (Service Worker, **Network-first**:
+  online frisch, offline aus Cache; `CACHE`-Version bei Releases hochzählen),
+  `icons/` (192/512/maskable/apple). Touch/Responsive über Media Queries in
+  `styles.css` (`touch-action: manipulation`, kleinere `--cell` bei schmalen Screens).
 
 ### Konventionen
 - Farbcodes im Raster: `y`=gelb, `n`=grün, `b`=blau, `r`=rot/pink, `o`=orange.

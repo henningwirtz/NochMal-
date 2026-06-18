@@ -336,3 +336,33 @@ body.light {
 }
 body.light { background: radial-gradient(1100px 560px at 50% -8%, #dde7f3 0%, var(--bg) 58%) fixed; }
 body.light .message { color: #9a6b00; }
+
+/* ===========================================================================
+   Touch & Mobile
+   =========================================================================== */
+/* Entfernt die 300ms-Verzögerung / Doppeltipp-Zoom auf Bedienelementen. */
+.cell, .die, button, .icon-btn, select, input { touch-action: manipulation; }
+* { -webkit-tap-highlight-color: rgba(0, 0, 0, 0); }
+
+@media (max-width: 760px) {
+  body { padding: 10px; }
+  .logo { font-size: 2.2rem; }
+  #top-controls { top: 6px; right: 8px; }
+  .game-header { gap: 8px; }
+  .game-main { gap: 12px; }
+  .board-container { flex-basis: auto; width: 100%; }
+  .sidebar { min-width: 0; width: 100%; flex-basis: 100%; }
+  .setup-card { max-width: none; }
+  .dice-tray { gap: 10px; }
+  .die { width: 46px; height: 46px; font-size: 1.2rem; }    /* größere Tap-Fläche */
+  .action-bar { gap: 8px; }
+  .action-bar button { padding: 10px 14px; }
+  .player-board { padding: 8px; }
+}
+@media (max-width: 430px) {
+  :root { --cell: 27px; }
+  .logo { font-size: 1.9rem; }
+  .die { width: 42px; height: 42px; }
+  .col-letter, .col-score { height: 20px; font-size: 0.72rem; }
+  .side-panel { min-width: 0; }
+}
