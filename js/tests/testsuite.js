@@ -168,5 +168,33 @@ export function runTests() {
     assert(game.finished, 'Spiel muss beendet sein');
   });
 
+  // 11) PvP: Spalten-Oberwert per Antippen umschalten - 1. Tippen streicht, 2. Tippen
+  // gibt den vollen Oberwert wieder frei (auch ein bereits gewerteter Wert wird zurück-
+  // gestuft und wieder hochgestuft).
+  test('PvP: Spalten-Strike umschaltbar (Toggle)', () => {
+    const game = new Game([{ name: 'Du', isHuman: true }], { relaxed: true });
+    const sheet = game.players[0].sheet;
+    markColumn(sheet, 2);                       // Spalte C komplett
+    game.toggleColumnStrikeByOther(0, 2);       // 1. Tippen: gestrichen
+    assert(sheet.columnTopStruck[2], 'nach 1. Tippen gestrichen');
+    game._awardCompletedRelaxed(sheet);
+    eq(sheet.columnAward[2], COLUMN_BOTTOM[2], 'reduzierter Wert');
+    game.toggleColumnStrikeByOther(0, 2);       // 2. Tippen: wieder frei
+    assert(!sheet.columnTopStruck[2], 'nach 2. Tippen wieder frei');
+    eq(sheet.columnAward[2], COLUMN_TOP[2], 'Oberwert wieder hergestellt');
+  });
+
+  // 12) PvP: Farb-Erstbonus per Antippen umschalten (5 <-> 3).
+  test('PvP: Farb-Strike umschaltbar (Toggle)', () => {
+    const game = new Game([{ name: 'Du', isHuman: true }], { relaxed: true });
+    const sheet = game.players[0].sheet;
+    markColor(sheet, COLORS.GELB);              // Farbe komplett
+    game.toggleColorStrikeByOther(0, COLORS.GELB);
+    game._awardCompletedRelaxed(sheet);
+    eq(sheet.colorAward[COLORS.GELB], 3, 'reduzierter Farb-Bonus');
+    game.toggleColorStrikeByOther(0, COLORS.GELB);
+    eq(sheet.colorAward[COLORS.GELB], 5, 'voller Farb-Bonus wieder hergestellt');
+  });
+
   return results;
 }

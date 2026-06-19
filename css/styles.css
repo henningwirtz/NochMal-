@@ -411,19 +411,17 @@ body.light .message { color: #9a6b00; }
    großzügiger & besser lesbar als im KI-Modus. Greift in jedem Layout; das
    enge Querformat nimmt einzelne Punkte weiter unten wieder zurück.
    =========================================================================== */
-/* (Block) Zellen-Breite wo Platz ist größer (auf dem Handy durch die Bildschirm-
-   breite begrenzt -> dort wächst v.a. die Höhe, siehe unten). */
-body.mode-notepad { --cell: clamp(18px, calc((100vw - 80px) / 15), 40px); }
+/* (Block) Normale Zellengröße wie im KI-Modus - die frühere PvP-Vergrößerung wurde
+   wieder zurückgenommen. --cell kommt aus :root bzw. den Mobile-Media-Queries und
+   passt sich der Bildschirmbreite an, damit nirgends horizontal gescrollt werden muss. */
 
-/* (Block) Kein eigener Scrollbalken mehr im Block - das Raster passt sich der
-   Breite an (oben über --cell), Scrollen ist nicht mehr nötig. */
+/* (Block) Kein eigener Scrollbalken im Block - das Raster passt sich der Breite an. */
 body.mode-notepad .player-board { overflow: visible; }
 
-/* (Spalten) Spaltenbuchstaben UND ihre Felder doppelt so hoch - Breite bleibt
-   gleich (= Zellenbreite). Dadurch wird der Block insgesamt deutlich größer und
-   besser lesbar, ohne dass horizontal gescrollt werden muss. */
-body.mode-notepad .col-letter { height: calc(var(--cell) * 2); font-size: 1.05rem; }
-body.mode-notepad .cell { height: calc(var(--cell) * 2); }
+/* (Spalten) Nur die Buchstaben-Köpfe (A–O) höher als die Felder, damit man sie
+   leichter antippen kann (Antippen streicht/entstreicht den Spalten-Oberwert). Die
+   Spielfelder selbst bleiben quadratisch (normale Höhe). */
+body.mode-notepad .col-letter { height: calc(var(--cell) * 1.6); font-size: 1.05rem; }
 
 /* (Punkte) Spielername entfällt. Die Punkte stehen kompakt als "… P." (ohne Name)
    oben im Header (#turn-info) - ein passender Ort, der den Block nicht stört. Der
@@ -435,6 +433,14 @@ body.mode-notepad .pb-score {
   background: var(--panel-2); border: 1px solid var(--line);
   border-radius: 999px; padding: 3px 12px;
 }
+
+/* (Wertungspanel) Farb-Bonus, Joker UND die Punkte-Übersicht stehen nebeneinander
+   in EINER kompakten Reihe (statt untereinander) - so rückt alles nach oben und der
+   Block bekommt mehr Platz darunter. Greift auch im KI-Modus (siehe Mobile-Query). */
+body.mode-notepad .side-panel {
+  display: flex; flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 16px;
+}
+body.mode-notepad .totals { margin-top: 0; }
 
 /* ===========================================================================
    Touch & Mobile
@@ -462,6 +468,11 @@ body.mode-notepad .pb-score {
   .action-bar { gap: 8px; }
   .action-bar button { padding: 10px 14px; }
   .player-board { padding: 8px; }
+  /* (Punkte) Auch im KI-Modus: Farb-Bonus, Joker und Punkte-Übersicht nebeneinander
+     in EINER Reihe unter dem Raster (analog zum PvP-Modus) - so braucht das Panel
+     weniger Höhe und jeder Block bleibt kompakt. */
+  .side-panel { display: flex; flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 16px; }
+  .totals { margin-top: 0; }
 }
 /* iPhone 13 aufwärts (375–430 px): kompletter Block ohne Horizontal-Scroll.
    --cell richtet sich nach der Viewport-Breite (Chrome aus Body/Board/Grid-Padding
@@ -509,7 +520,7 @@ body.mode-notepad .pb-score {
      "Spiel beenden" wandert nach oben rechts neben Theme/Ton (siehe unten). */
   #game-screen:not(.hidden) {
     display: grid;
-    grid-template-columns: 1fr minmax(150px, 190px); /* Block | schmale Steuerspalte */
+    grid-template-columns: 1fr minmax(138px, 176px); /* Block | schmale Steuerspalte (~8% schmaler) */
     grid-template-rows: auto auto 1fr auto auto auto;
     grid-template-areas:
       "board comment"

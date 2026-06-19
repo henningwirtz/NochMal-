@@ -205,18 +205,30 @@ export class Game {
     }
   }
 
-  // PvP: markiert, dass ein anderer Spieler die Spalte zuerst geschlossen hat -> nur noch
-  // der reduzierte Wert moeglich. Idempotent; stuft einen bereits voll vergebenen Wert herab.
-  strikeColumnByOther(playerIndex, col) {
+  // PvP: Spalten-Oberwert per Antippen umschalten. 1. Tippen = "anderer Spieler war
+  // zuerst" -> nur noch der reduzierte (untere) Wert moeglich. Erneutes Tippen gibt den
+  // vollen Oberwert wieder frei. Ein bereits gewerteter Wert wird passend umgestuft.
+  toggleColumnStrikeByOther(playerIndex, col) {
     const sheet = this.players[playerIndex].sheet;
-    sheet.strikeColumnTop(col);
-    if (sheet.columnAward[col] === COLUMN_TOP[col]) sheet.awardColumn(col, false);
+    if (sheet.columnTopStruck[col]) {
+      sheet.unstrikeColumnTop(col);
+      if (sheet.columnAward[col] === COLUMN_BOTTOM[col]) sheet.awardColumn(col, true);
+    } else {
+      sheet.strikeColumnTop(col);
+      if (sheet.columnAward[col] === COLUMN_TOP[col]) sheet.awardColumn(col, false);
+    }
   }
 
-  strikeColorByOther(playerIndex, color) {
+  // PvP: Farb-Erstbonus (5 Punkte) analog per Antippen umschalten.
+  toggleColorStrikeByOther(playerIndex, color) {
     const sheet = this.players[playerIndex].sheet;
-    sheet.strikeColorFirst(color);
-    if (sheet.colorAward[color] === COLOR_BONUS_FIRST) sheet.awardColor(color, COLOR_BONUS_LATER);
+    if (sheet.colorFirstStruck[color]) {
+      sheet.unstrikeColorFirst(color);
+      if (sheet.colorAward[color] === COLOR_BONUS_LATER) sheet.awardColor(color, COLOR_BONUS_FIRST);
+    } else {
+      sheet.strikeColorFirst(color);
+      if (sheet.colorAward[color] === COLOR_BONUS_FIRST) sheet.awardColor(color, COLOR_BONUS_LATER);
+    }
   }
 
   // --- Runde auswerten -----------------------------------------------------

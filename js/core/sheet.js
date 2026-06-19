@@ -85,6 +85,11 @@ export class Sheet {
     this.columnTopStruck[col] = true;
   }
 
+  // PvP: einen zuvor gestrichenen Spalten-Oberwert wieder freigeben.
+  unstrikeColumnTop(col) {
+    this.columnTopStruck[col] = false;
+  }
+
   // --- Farben --------------------------------------------------------------
   colorMarkedCount(color) {
     let n = 0;
@@ -117,6 +122,11 @@ export class Sheet {
 
   strikeColorFirst(color) {
     this.colorFirstStruck[color] = true;
+  }
+
+  // PvP: einen zuvor gestrichenen Farb-Erstbonus wieder freigeben.
+  unstrikeColorFirst(color) {
+    this.colorFirstStruck[color] = false;
   }
 
   completedColorCount() {

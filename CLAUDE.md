@@ -143,14 +143,27 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   die Übersicht zeigt Bonus/Spalten/Joker/Sterne + TOTAL je Block. Bei nur EINEM Block
   (Solo oder PvP) steht „Endstand: X Punkte" statt „Sieger".
 - PvP/Notizblock-Modus (`body.mode-notepad`, nur EIN Block, Würfel sind Referenz):
-  bewusst großzügiger als der KI-Modus. **Würfel** ~50 % größer (90 px im Hochformat,
-  im engen Querformat 52 px). **Block** größer: `--cell` nutzt mehr Breite (auf dem Handy
-  durch die Bildschirmbreite begrenzt) und der eigene Block-Scrollbalken entfällt
-  (`overflow: visible`). **Spaltenbuchstaben + Felder doppelt so hoch** (`height:
-  calc(var(--cell)*2)`, Breite unverändert; im engen Querformat zurückgenommen) – so wird
-  der Block ohne Horizontal-Scroll deutlich größer/lesbarer. **Punkte:** ohne Spielername,
-  nur `… P.` – im Hochformat oben im Header (`#turn-info`, `setTurnInfo(…, relaxed)`),
-  der Block-Kopf (`.pb-head`) entfällt; im Querformat als kleines Badge am Block.
+  **Würfel** ~50 % größer (90 px im Hochformat, im engen Querformat 52 px). **Block:**
+  die frühere Sonder-Vergrößerung wurde zurückgenommen – `--cell` kommt wieder aus
+  `:root`/den Mobile-Media-Queries und passt sich der Bildschirmbreite an, der eigene
+  Block-Scrollbalken entfällt (`overflow: visible`); zusammen mit dem kompakten
+  Wertungspanel (s. u.) soll nirgends gescrollt werden müssen. **Spaltenköpfe A–O**
+  sind 1,6× so hoch wie die Felder (`.col-letter height: calc(var(--cell)*1.6)`, Breite
+  = Zellenbreite) – nur die Köpfe, damit man sie als Umschalter leichter trifft; die
+  Spielfelder bleiben quadratisch. **A–O / Farb-Bonus antippen = Umschalter:** 1. Tippen
+  streicht den Spalten-Oberwert bzw. den 5er-Farb-Erstbonus („anderer war zuerst" → nur
+  reduzierter Wert), erneutes Tippen gibt den vollen Wert wieder frei
+  (`game.toggleColumnStrikeByOther`/`toggleColorStrikeByOther`, stuft auch einen bereits
+  gewerteten Wert passend um; `sheet.unstrikeColumnTop`/`unstrikeColorFirst`).
+  **Wertungspanel** (`.side-panel`): Farb-Bonus, Joker UND Punkte-Übersicht stehen in
+  EINER kompakten Reihe nebeneinander (statt untereinander) → alles rückt nach oben, der
+  Block bekommt mehr Platz. **Punkte:** ohne Spielername, nur `… P.` – im Hochformat oben
+  im Header (`#turn-info`, `setTurnInfo(…, relaxed)`), der Block-Kopf (`.pb-head`) entfällt;
+  im Querformat als kleines Badge am Block. Im engen Querformat ist die rechte
+  Steuerspalte ~8 % schmaler (`minmax(138px, 176px)`).
+- KI-Modus: gleiche Punkteanzeige-Idee – auf Handybreite (`@media max-width: 760px`) steht
+  das Wertungspanel (`.side-panel`) ebenfalls als kompakte Reihe unter dem Raster (Farb-
+  Bonus + Joker + Punkte nebeneinander), damit jeder Block weniger Höhe braucht.
 - „Spiel beenden" (`#end-game-btn` im Spiel-Header): verwirft das laufende Spiel und
   geht zurück ins Menü. `runGame` setzt dazu `dom.abortGame`; weil der Ablauf
   event-gesteuert ist (keine durchlaufende Schleife), bricht es nur einen evtl. gerade
