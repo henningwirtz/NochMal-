@@ -79,6 +79,8 @@ body.mode-notepad .mode-a-only { display: none; }
   margin: 16px 0;
   max-width: 480px;
 }
+/* Start-Knopf direkt unter den Modus-Karten - immer erreichbar. */
+#start-btn { display: block; width: 100%; max-width: 480px; margin: 0 0 16px; }
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
 .field span { color: var(--muted); font-size: 0.9rem; }
 select, input[type="text"] {
@@ -756,11 +758,12 @@ body.mode-notepad .totals { margin-top: 0; }
     max-width: none; height: 100dvh; overflow: hidden;
     display: grid; gap: 8px 14px;
     grid-template-columns: 0.85fr 1.3fr 1fr;   /* Modus | Einstellungen | Liste */
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
     grid-template-areas:
-      "head head     head"
-      "mode settings side"
-      "mode settings rules";
+      "head  head     head"
+      "mode  settings side"
+      "start settings side"
+      "start settings rules";
     align-items: start;
   }
   .setup-head { grid-area: head; margin: 0; }
@@ -771,6 +774,11 @@ body.mode-notepad .totals { margin-top: 0; }
     flex-direction: column; gap: 8px;
   }
   .mode-card { flex: 0 0 auto; }
+
+  /* Start-Knopf direkt unter den Modus-Karten in der linken Spalte. */
+  #setup-screen #start-btn {
+    grid-area: start; align-self: start; max-width: none; margin: 0;
+  }
 
   /* Einstellungskarte (alles außer Bestenliste) in die mittlere Spalte. Sie wird
      nur so hoch wie ihr Inhalt (oben ausgerichtet, nicht über die ganze Höhe

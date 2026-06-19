@@ -113,9 +113,13 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   Maus, `pointer: fine`, greift das nie). Die installierte PWA startet zudem im
   Querformat (`manifest.json` → `"orientation": "landscape"`).
   **Startbildschirm im Querformat** (`@media (orientation: landscape) and (pointer: coarse)`,
-  `#setup-screen`): drei Spalten unterschiedlicher Breite – links Modus-Auswahl, Mitte
-  (am breitesten) Einstellungen + „Spiel starten", rechts Bestenliste oben + Kurzregeln
+  `#setup-screen`): drei Spalten unterschiedlicher Breite – links Modus-Auswahl **mit dem
+  „Spiel starten"-Knopf direkt darunter** (`#start-btn` als direktes Kind von
+  `#setup-screen`, grid-area `start` in der linken Spalte unter `mode`), Mitte
+  (am breitesten) Einstellungen, rechts Bestenliste oben + Kurzregeln
   darunter; passt ohne Scrollen (`height: 100dvh; overflow: hidden`, nur Liste scrollt).
+  Im Standard-/Hochformat steht „Spiel starten" ebenfalls direkt unter den Modus-Karten
+  (vor der Einstellungskarte), damit er **jederzeit erreichbar** ist.
   Kopfzeile (`.setup-head`) = Logo + kurzer Versionsname (`#build-badge`, gespeist aus
   `VERSION` in `main.js`, z. B. „Version 2.0 · Querformat"); der frühere Untertitel
   entfällt.
