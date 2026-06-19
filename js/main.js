@@ -23,9 +23,9 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 const $ = (id) => document.getElementById(id);
 
 // Versionsanzeige - hilft zu erkennen, ob die aktuelle (ungecachte) Version laeuft.
-const VERSION = '2026-06-19 · PvP: Block-Vergrößerung zurück, kein Scrollen, größere A–O-Köpfe (antippbar als Umschalter), Wertungspanel als kompakte Reihe; KI: gleiche Punkteanzeige';
+const VERSION = '2.0 · Querformat';
 const buildBadge = $('build-badge');
-if (buildBadge) buildBadge.textContent = `Stand: ${VERSION}`;
+if (buildBadge) buildBadge.textContent = `Version ${VERSION}`;
 
 const playerCountSel = $('player-count');
 const slotsContainer = $('player-slots');

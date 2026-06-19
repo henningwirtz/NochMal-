@@ -16,6 +16,14 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 </head>
 <body>
+  <!-- Querformat erzwingen: im Hochformat (Handy/Tablet) verdeckt dieses Overlay alles. -->
+  <div id="rotate-prompt" class="rotate-prompt" aria-hidden="true">
+    <div class="rotate-inner">
+      <div class="rotate-icon">🔄</div>
+      <p>Bitte drehe dein Gerät ins <strong>Querformat</strong>.</p>
+    </div>
+  </div>
+
   <div id="top-controls">
     <button id="theme-toggle" class="icon-btn" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel umschalten">🌙</button>
     <button id="mute-toggle" class="icon-btn" title="Ton an/aus" aria-label="Ton an/aus">🔊</button>
@@ -23,9 +31,10 @@
 
   <!-- ===================== Setup ===================== -->
   <section id="setup-screen" class="screen">
-    <h1 class="logo">NOCH MAL!</h1>
-    <p class="subtitle">Das geniale Würfelspiel – Nachbau für den Browser
-      <span id="build-badge" class="build-badge"></span></p>
+    <div class="setup-head">
+      <h1 class="logo">NOCH MAL!</h1>
+      <span id="build-badge" class="build-badge"></span>
+    </div>
 
     <div id="mode-select" class="mode-select">
       <button type="button" class="mode-card active" data-mode="a">

@@ -29,8 +29,9 @@ Code (keine komplizierten Konstrukte).
 
 Start-Anleitung siehe `README`. Kurz: ES-Module brauchen einen HTTP-Server (kein
 `file://`) – `npm start` bzw. die `Spiel starten`-Skripte (nutzen `serve.py` mit
-`Cache-Control: no-store`). Nach Änderungen die `VERSION` in `main.js` hochsetzen
-(Anzeige im Setup via `#build-badge`).
+`Cache-Control: no-store`). Nach Änderungen die `VERSION` in `main.js` hochsetzen –
+ein **kurzer, sprechender Versionsname** (z. B. `'2.0 · Querformat'`), der im Setup-Kopf
+als „Version …" erscheint (`#build-badge`).
 
 ## Tests
 
@@ -93,7 +94,20 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   `styles.css` (`touch-action: manipulation`; ab iPhone-Breite ≤430 px passt der
   15-spaltige Block per `--cell: clamp(…, calc((100vw − 80px)/15), 27px)` komplett
   ohne Horizontal-Scroll, Safe-Area-Insets via `env(safe-area-inset-*)` für Notch/
-  Dynamic Island/Home-Indikator). Querformat (`orientation: landscape` & `max-height: 600px`):
+  Dynamic Island/Home-Indikator). **Nur Querformat:** Auf Touch-Geräten
+  (`@media (orientation: portrait) and (pointer: coarse)`) verdeckt im Hochformat ein
+  Overlay (`#rotate-prompt`) das ganze UI und fordert zum Drehen auf (am Desktop mit
+  Maus, `pointer: fine`, greift das nie). Die installierte PWA startet zudem im
+  Querformat (`manifest.json` → `"orientation": "landscape"`).
+  **Startbildschirm im Querformat** (`@media (orientation: landscape) and (pointer: coarse)`,
+  `#setup-screen`): drei Spalten unterschiedlicher Breite – links Modus-Auswahl, Mitte
+  (am breitesten) Einstellungen + „Spiel starten", rechts Bestenliste oben + Kurzregeln
+  darunter; passt ohne Scrollen (`height: 100dvh; overflow: hidden`, nur Liste scrollt).
+  Kopfzeile (`.setup-head`) = Logo + kurzer Versionsname (`#build-badge`, gespeist aus
+  `VERSION` in `main.js`, z. B. „Version 2.0 · Querformat"); der frühere Untertitel
+  entfällt.
+  Spiel-Querformat (`@media (orientation: landscape) and (pointer: coarse)` – greift nun
+  auch auf Tablets, nicht mehr nur `max-height: 600px`):
   Grid mit Block links + schmaler Steuerspalte rechts; Steuerspalte von oben =
   KI-Aktionen/Kommentar (prominent), Würfeln-Button, Würfel + Joker-Auswahl
   (dehnbare, bei Bedarf scrollbare 1fr-Zone – Joker-Würfel sind hier klein (22 px),

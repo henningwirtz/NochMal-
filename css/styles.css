@@ -39,7 +39,14 @@ h1, h2, h3 { margin: 0.2em 0; }
   letter-spacing: 1px;
 }
 .subtitle { color: var(--muted); margin-top: -0.4em; }
-.build-badge { display: inline-block; margin-left: 6px; font-size: 0.7rem; color: var(--muted); opacity: 0.7; }
+.build-badge { display: inline-block; font-size: 0.85rem; color: var(--muted); opacity: 0.8; }
+/* Kopfzeile des Startbildschirms: Logo + Versionsname nebeneinander. */
+.setup-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+
+/* Drehen-Hinweis: nur im Hochformat auf Touch-Geräten sichtbar (siehe Media-Query unten). */
+.rotate-prompt { display: none; }
+.rotate-prompt .rotate-icon { font-size: 3rem; }
+.rotate-prompt p { font-size: 1.2rem; max-width: 18em; }
 
 /* ---------- Setup ---------- */
 /* Modus-Auswahl auf der Startseite: zwei große Karten nebeneinander. */
@@ -500,7 +507,7 @@ body.mode-notepad .totals { margin-top: 0; }
    Buttons. `display: contents` auf `.game-main` hebt Block + Sidebar direkt
    ins Grid des #game-screen (kein DOM-Umbau nötig).
    =========================================================================== */
-@media (orientation: landscape) and (max-height: 600px) {
+@media (orientation: landscape) and (pointer: coarse) {
   /* Zelle so wählen, dass der ganze Block (Raster + Bonus/Joker-Panel) in die
      Board-Spalte passt - auch wenn die Steuerspalte auf ihre Mindestbreite schrumpft -
      und das Raster in die Höhe. 9 ≈ 7 Block-Reihen + Spaltenkopf + Spaltensumme. */
@@ -652,4 +659,64 @@ body.mode-notepad .totals { margin-top: 0; }
     right: calc(max(8px, env(safe-area-inset-right)) + 76px);
     margin: 0; width: auto; padding: 6px 9px; font-size: 0.72rem;
   }
+}
+
+/* ===========================================================================
+   Nur Querformat: Hochformat auf Touch-Geräten blockieren
+   ---------------------------------------------------------------------------
+   Im Hochformat (Handy/Tablet, pointer: coarse) wird das gesamte UI verdeckt
+   und stattdessen die Aufforderung zum Drehen gezeigt. Am Desktop (pointer:
+   fine) greift das nie - dort bleibt alles wie gewohnt.
+   =========================================================================== */
+@media (orientation: portrait) and (pointer: coarse) {
+  .rotate-prompt {
+    display: flex; position: fixed; inset: 0; z-index: 9999;
+    align-items: center; justify-content: center; text-align: center;
+    background: var(--bg); color: var(--ink); padding: 24px;
+  }
+  .rotate-prompt .rotate-inner { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  /* Alles Darunterliegende ausblenden, solange im Hochformat. */
+  #top-controls, .screen { display: none !important; }
+}
+
+/* ===========================================================================
+   Startbildschirm im Querformat (Handy/Tablet): drei Spalten, ohne Scrollen
+   ---------------------------------------------------------------------------
+   Links Modus-Auswahl, Mitte Einstellungen + Start, rechts Bestenliste mit
+   Kurzregeln darunter. Spalten unterschiedlich breit (Mitte am breitesten).
+   =========================================================================== */
+@media (orientation: landscape) and (pointer: coarse) {
+  #setup-screen:not(.hidden) {
+    max-width: none; height: 100dvh; overflow: hidden;
+    display: grid; gap: 8px 14px;
+    grid-template-columns: 0.85fr 1.3fr 1fr;   /* Modus | Einstellungen | Liste */
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "head head     head"
+      "mode settings side"
+      "mode settings rules";
+    align-items: start;
+  }
+  .setup-head { grid-area: head; margin: 0; }
+  .logo { font-size: 2rem; }
+
+  #mode-select {
+    grid-area: mode; max-width: none; margin: 0;
+    flex-direction: column; gap: 8px;
+  }
+  .mode-card { flex: 0 0 auto; }
+
+  /* Einstellungskarte (alles außer Bestenliste) in die mittlere Spalte. */
+  #setup-screen > .setup-card:not(#leaderboard-card) {
+    grid-area: settings; max-width: none; margin: 0;
+    height: 100%; overflow-y: auto;
+  }
+  .field { margin-bottom: 10px; }
+
+  /* Bestenliste oben, Kurzregeln darunter - beide in der rechten Spalte. */
+  #leaderboard-card {
+    grid-area: side; max-width: none; margin: 0;
+    align-self: stretch; overflow-y: auto;
+  }
+  .rules { grid-area: rules; margin: 6px 0 0; }
 }
