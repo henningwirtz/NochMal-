@@ -59,9 +59,15 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   `chooseMove(sheet, pool, difficulty)`; Stufen `leicht`/`mittel`/`schwer` über `CFG`,
   die die strategische Gewichtung skalieren).
 - `js/ui/` – Rendering & Ablauf: `boardView.js` (`renderSheet` = ein Blatt),
-  `flow.js` (`runGame`/`renderBoards` = alle Spieler-Blöcke gleichzeitig, KI-Züge,
+  `flow.js` (`runGame` = **schrittweiser, event-gesteuerter Ablauf**: jeder Schritt –
+  Würfeln, Zug eines Spielers, auch der KI – wird per Klick ausgelöst; `present()` ist die
+  zentrale Weiche, die aus dem Spielzustand ableitet, was als Nächstes dran ist
+  (`presentRoll`/`presentChooser`/`presentAi`/`runAi`/`advance`). Vor jedem Zug wird ein
+  `game.snapshot()` in den `history`-Stack gelegt, die Zurück-Taste (`onUndo`) stellt den
+  vorigen Zustand wieder her. `renderBoards` = alle Spieler-Blöcke gleichzeitig,
   Log/Ansagen, inline Endwertung), `controls.js` (`humanTurn` = interaktiver Zug,
-  nur eigener Block anklickbar; Rückgängig-Button + optionaler Zug-Timer),
+  nur eigener Block anklickbar; „↶ Feld zurück" wählt einzelne gewählte Felder VOR dem
+  Bestätigen wieder ab + optionaler Zug-Timer),
   `storage.js` (localStorage: Bestenliste `recordResults`/`getScores`/`removeScoreAt`/
   `clearScores`, Setup-Einstellungen `loadSettings`/`saveSettings`, globale Präferenzen
   `loadPrefs`/`savePrefs`), `sound.js` (WebAudio-Effekte: `playRoll`/`playMark`/
@@ -78,17 +84,33 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   ohne Horizontal-Scroll, Safe-Area-Insets via `env(safe-area-inset-*)` für Notch/
   Dynamic Island/Home-Indikator). Querformat (`orientation: landscape` & `max-height: 600px`):
   Grid mit Block links + schmaler Steuerspalte rechts; Steuerspalte von oben =
-  KI-Aktionen/Kommentar (prominent), Würfeln-Button, Würfel + Joker-Auswahl,
-  Aktionen, Zug-Timer. „Spiel beenden" sitzt fix oben rechts neben Theme/Ton.
+  KI-Aktionen/Kommentar (prominent), Würfeln-Button, Würfel + Joker-Auswahl
+  (dehnbare, bei Bedarf scrollbare 1fr-Zone – Joker-Würfel sind hier kleiner, damit
+  alle 5 Farben/Zahlen in EINE Reihe passen), Aktionen, „↩ Zug zurück", Zug-Timer.
+  Die Aktionen sitzen fix UNTER der Würfel/Joker-Zone und können die Joker-Auswahl so
+  nie verdecken. „Spiel beenden" sitzt fix oben rechts neben Theme/Ton.
   In jedem Block stehen Farb-Bonus + Joker per `column-reverse` ÜBER dem Raster;
   Sterne/Kreuze sind nur hier ~50 % größer (im Hochformat unverändert).
 
 ### Konventionen
 - Farbcodes im Raster: `y`=gelb, `n`=grün, `b`=blau, `r`=rot/pink, `o`=orange.
 - Jeder Spieler hat ein eigenes `Sheet`; alle Blöcke sind gleichzeitig sichtbar, der
-  aktive ist hervorgehoben. KI-Spieler ziehen vollautomatisch über `aiTurn` in `flow.js`
-  – bewusst langsam und nachvollziehbar: Felder werden einzeln ausgewählt (wie ein
-  Mensch) und dann gemeinsam angekreuzt. Schwierigkeit kommt aus `game.aiDifficulty`.
+  aktive ist hervorgehoben. **Jeder Schritt wird vom Menschen ausgelöst** – auch das
+  Würfeln (Würfeln-Button, Beschriftung „Für … (KI) würfeln" bei aktiver KI) und der
+  KI-Zug („🤖 … ziehen lassen"). Das ist Voraussetzung für die Zurück-Taste: der Ablauf
+  rennt nicht von allein weiter. KI-Züge laufen dann über `runAi` in `flow.js` – bewusst
+  langsam und nachvollziehbar: Felder werden einzeln ausgewählt (wie ein Mensch) und dann
+  gemeinsam angekreuzt. Schwierigkeit kommt aus `game.aiDifficulty`.
+- **Zurück-Taste „↩ Zug zurück" (`#undo-btn`):** während des ganzen Spiels sichtbar,
+  nimmt nach kurzer Rückfrage den ZULETZT gemachten Zug zurück (egal ob eigener oder
+  KI-Zug) und springt so Zug für Zug zurück. Technisch: `flow.js` legt vor jedem Zug
+  `game.snapshot()` (kompletter Zustand inkl. aller Blätter, via `structuredClone`) auf
+  `history`; `onUndo` holt den letzten Snapshot zurück (`game.restore`) und ruft `present()`
+  erneut. Das Würfeln ist KEIN eigener Zurück-Schritt; springt man über einen Rundenanfang
+  zurück, wird beim nächsten Vorlauf neu gewürfelt. Die Taste ist gesperrt, wenn `history`
+  leer ist oder gerade eine Animation läuft (`busy`).
+- Würfeln-Button (`#roll-btn`): in JEDEM Layout sichtbar (jeder Wurf per Klick); `flow.js`
+  blendet ihn per `.hidden` aus, wenn gerade nicht gewürfelt werden kann.
 - Jeder Wurf startet mit einer kurzen Würfelanimation (`animateRoll`/`.die.rolling`).
 - Sternfelder: der Stern sitzt zentral im Feld (wie im Original); ein gesetztes Kreuz (✕)
   liegt groß und dick darüber, das Feld wird abgedunkelt (`.cell.marked`) – so ist „schon
@@ -97,18 +119,17 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   über den Blöcken (samt „Neues Spiel"-Button), die Blöcke bleiben sichtbar. Beim
   Spielende werden alle Ergebnisse in die Bestenliste geschrieben.
 - „Spiel beenden" (`#end-game-btn` im Spiel-Header): verwirft das laufende Spiel und
-  geht zurück ins Menü. `runGame` setzt dazu `dom.abortGame`, das ein
-  `control`-Objekt (`{ aborted, cancel }`) markiert; die Schleife in `flow.js` und
-  `aiTurn` prüfen `control.aborted` nach jedem `await` und brechen sauber ab (kein
-  Eintrag in der Bestenliste). `humanTurn(…, control)` liefert per `control.cancel`
-  ein `{ action:'abort' }`, falls gerade ein Mensch am Zug ist.
+  geht zurück ins Menü. `runGame` setzt dazu `dom.abortGame`; weil der Ablauf
+  event-gesteuert ist (keine durchlaufende Schleife), bricht es nur einen evtl. gerade
+  laufenden Mensch-Zug ab (`currentControl.cancel`, liefert `{ action:'abort' }`). Danach
+  geht `main.js` zurück ins Menü (kein Eintrag in der Bestenliste).
 - Bestenliste „immer aktuell": `main.js` rendert sie neu bei Spielende/Menü-Rückkehr,
   zusätzlich über ein `storage`-Event (Updates aus anderen Tabs/Fenstern, `SCORES_KEY`
   aus `storage.js`) sowie bei `visibilitychange`/`focus` (PWA aus dem Hintergrund).
 - Das Log (`#log`) trennt jeden Wurf mit einem `▶`-Marker (`announceRound`).
 - Optionaler Zug-Timer: `game.moveTimer` (Sekunden, 0 = aus); läuft je Mensch-Zug in
   `controls.js`, bei Ablauf wird automatisch gepasst (`{ action:'pass', timedOut:true }`).
-- KI-Tempo: `game.aiSpeed` (Faktor auf die Pausen in `aiTurn`; >1 langsamer, <1 schneller).
+- KI-Tempo: `game.aiSpeed` (Faktor auf die Pausen in `runAi`; >1 langsamer, <1 schneller).
 - Hell/Dunkel: `body.light` überschreibt die CSS-Variablen; Theme + Mute liegen in
   `prefs` (localStorage) und werden sofort beim Umschalten gespeichert.
 - Setup merkt sich Spielernamen, Anzahl, KI-Stärke, KI-Tempo und Timer (localStorage).

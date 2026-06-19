@@ -309,6 +309,61 @@ export class Game {
     return this.roundLog;
   }
 
+  // --- Zurück-Funktion: Schnappschuss & Wiederherstellung ------------------
+  // Speichert den kompletten veränderlichen Spielzustand (inkl. aller Blätter),
+  // damit ein Zug exakt zurückgenommen werden kann. structuredClone kopiert tief,
+  // sodass der Schnappschuss unabhängig vom laufenden Zustand ist.
+  snapshot() {
+    return structuredClone({
+      activeIndex: this.activeIndex,
+      rollCount: this.rollCount,
+      columnFirstClaimed: this.columnFirstClaimed,
+      colorFirstClaimed: this.colorFirstClaimed,
+      finished: this.finished,
+      endTriggered: this.endTriggered,
+      dice: this.dice,
+      removedColorId: this.removedColorId,
+      removedNumberId: this.removedNumberId,
+      order: this.order,
+      pointer: this.pointer,
+      roundLog: this.roundLog,
+      sheets: this.players.map((p) => ({
+        marks: p.sheet.marks,
+        jokersUsed: p.sheet.jokersUsed,
+        hasMarkedAny: p.sheet.hasMarkedAny,
+        columnAward: p.sheet.columnAward,
+        columnTopStruck: p.sheet.columnTopStruck,
+        colorAward: p.sheet.colorAward,
+        colorFirstStruck: p.sheet.colorFirstStruck,
+      })),
+    });
+  }
+
+  restore(s) {
+    this.activeIndex = s.activeIndex;
+    this.rollCount = s.rollCount;
+    this.columnFirstClaimed = s.columnFirstClaimed;
+    this.colorFirstClaimed = s.colorFirstClaimed;
+    this.finished = s.finished;
+    this.endTriggered = s.endTriggered;
+    this.dice = s.dice;
+    this.removedColorId = s.removedColorId;
+    this.removedNumberId = s.removedNumberId;
+    this.order = s.order;
+    this.pointer = s.pointer;
+    this.roundLog = s.roundLog;
+    this.players.forEach((p, i) => {
+      const ss = s.sheets[i];
+      p.sheet.marks = ss.marks;
+      p.sheet.jokersUsed = ss.jokersUsed;
+      p.sheet.hasMarkedAny = ss.hasMarkedAny;
+      p.sheet.columnAward = ss.columnAward;
+      p.sheet.columnTopStruck = ss.columnTopStruck;
+      p.sheet.colorAward = ss.colorAward;
+      p.sheet.colorFirstStruck = ss.colorFirstStruck;
+    });
+  }
+
   // --- Endwertung ----------------------------------------------------------
   finalScores() {
     const rows = this.players.map((p) => ({

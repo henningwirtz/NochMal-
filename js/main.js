@@ -23,7 +23,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 const $ = (id) => document.getElementById(id);
 
 // Versionsanzeige - hilft zu erkennen, ob die aktuelle (ungecachte) Version laeuft.
-const VERSION = '2026-06-19 · Querformat: Bonus/Joker nach oben, KI-Aktionen prominent, Beenden oben rechts, Joker-Auswahl entkoppelt, Sterne/Kreuze größer';
+const VERSION = '2026-06-19 · Zurück-Taste (Zug für Zug zurückspringen, KI/Würfeln per Klick), Joker-Auswahl einreihig, kompaktere Buttons';
 const buildBadge = $('build-badge');
 if (buildBadge) buildBadge.textContent = `Stand: ${VERSION}`;
 
@@ -231,6 +231,7 @@ const dom = {
   diceTray: $('dice-tray'),
   rollBtn: $('roll-btn'),
   actionBar: $('action-bar'),
+  undoBtn: $('undo-btn'),
   boardContainer: $('board-container'),
   message: $('message'),
   commentary: $('commentary'),

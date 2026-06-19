@@ -111,7 +111,7 @@ button.big { font-size: 1.1rem; padding: 12px 24px; margin-top: 10px; }
 .end-game-btn {
   margin-left: auto; align-self: center;
   background: #5a2a2a; color: #fff; border: 1px solid #b34545;
-  border-radius: 8px; padding: 8px 14px; font-weight: 700; cursor: pointer;
+  border-radius: 8px; padding: 7px 13px; font-size: 0.9rem; font-weight: 700; cursor: pointer;
 }
 .end-game-btn:hover { background: #7a3636; }
 
@@ -154,10 +154,31 @@ button.big { font-size: 1.1rem; padding: 12px 24px; margin-top: 10px; }
 .action-bar button.pass { background: #5a2a2a; color: #fff; border: none; }
 .message { min-height: 1.2em; color: #ffd27a; margin: 4px 0; }
 
-/* Wuerfeln-Button + Kommentar-Box: nur im Querformat (Landscape) sichtbar,
-   im Hochformat ausgeblendet (dort wird automatisch gewuerfelt, Hinweise
-   stehen in #message/Log). */
-.roll-btn, .commentary-box { display: none; }
+/* Kommentar-Box: nur im Querformat (Landscape) sichtbar, im Hochformat stehen die
+   Hinweise in #message/Log. */
+.commentary-box { display: none; }
+
+/* Würfeln-Button: in jedem Layout sichtbar (jeder Wurf wird per Klick ausgelöst -
+   auch für die KI). flow.js blendet ihn per .hidden aus, wenn gerade nicht gewürfelt
+   werden kann. */
+.roll-btn {
+  display: block; width: 100%; max-width: 320px; margin: 6px 0;
+  padding: 12px; border: none; border-radius: 8px;
+  background: var(--panel-2); color: var(--ink); font-weight: 800;
+  font-size: 1.05rem; cursor: pointer;
+}
+.roll-btn:disabled { opacity: 0.4; cursor: default; }
+.roll-btn.ready { background: var(--accent); color: #1a1a1a; }
+
+/* Zurück-Taste ("ganzen Zug zurücknehmen"): während des ganzen Spiels sichtbar,
+   deaktiviert, wenn es nichts zurückzunehmen gibt. */
+.undo-btn {
+  display: block; width: 100%; max-width: 320px; margin: 2px 0 6px;
+  padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); color: var(--ink); font-weight: 700; cursor: pointer;
+}
+.undo-btn:hover:not(:disabled) { border-color: var(--accent); }
+.undo-btn:disabled { opacity: 0.4; cursor: default; }
 
 /* ---------- Main layout ---------- */
 .game-main { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
@@ -363,7 +384,7 @@ button.die:not(.disabled):hover { transform: translateY(-2px); box-shadow: 0 4px
 }
 .icon-btn {
   background: var(--panel); border: 1px solid var(--line); color: var(--ink);
-  border-radius: 8px; width: 40px; height: 40px; font-size: 1.15rem; cursor: pointer;
+  border-radius: 8px; width: 36px; height: 36px; font-size: 1.03rem; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: border-color .15s, transform .1s;
 }
@@ -435,25 +456,29 @@ body.light .message { color: #9a6b00; }
      Board-Spalte passt - auch wenn die Steuerspalte auf ihre Mindestbreite schrumpft -
      und das Raster in die Höhe. 9 ≈ 7 Block-Reihen + Spaltenkopf + Spaltensumme. */
   :root {
-    --cell: clamp(14px, min((100vw - 240px) / 15, (100dvh - 96px) / 9), 30px);
+    /* Block bewusst ~5% kleiner als die maximal moegliche Zelle, damit unter dem
+       Raster mehr Platz fuer die Steuerspalte (v.a. Joker-Auswahl) bleibt. */
+    --cell: calc(0.95 * clamp(14px, min((100vw - 240px) / 15, (100dvh - 96px) / 9), 30px));
   }
 
   /* Reihenfolge der Steuerspalte (von oben):
        1. KI-Aktionen (Kommentar) - prominent ganz oben (getauscht mit "Spiel beenden")
        2. Würfeln-Button         - klar ÜBER den Würfeln, weg von der Joker-Auswahl
-       3. Würfel (2×3) + Joker-Auswahl
-       4. Aktionen (Bestätigen/Passen/Rückgängig)
+       3. Würfel (2×3) + Joker-Auswahl  - dehnbare, bei Bedarf scrollbare Zone (1fr)
+       4. Aktionen (Bestätigen/Passen/…) - feste Zeile UNTEN, deckt die Joker-Auswahl
+          dadurch nie zu und ist immer erreichbar
        5. Zug-Timer (falls aktiv)
      "Spiel beenden" wandert nach oben rechts neben Theme/Ton (siehe unten). */
   #game-screen:not(.hidden) {
     display: grid;
     grid-template-columns: 1fr minmax(140px, 180px); /* Block | schmale Steuerspalte */
-    grid-template-rows: auto auto auto 1fr auto;
+    grid-template-rows: auto auto 1fr auto auto auto;
     grid-template-areas:
       "board comment"
       "board roll"
       "board dice"
       "board actions"
+      "board undo"
       "board timer";
     gap: 8px;
     height: 100dvh;
@@ -488,28 +513,35 @@ body.light .message { color: #9a6b00; }
   .roll-btn:disabled { opacity: 0.4; cursor: default; }
   .roll-btn.ready { background: var(--accent); color: #1a1a1a; }
 
-  /* Würfel als sauberes 2×3-Raster: Farbreihe oben, Zahlenreihe exakt darunter. */
-  .dice-tray  { grid-area: dice; margin: 0; flex-direction: column; gap: 6px; }
+  /* Würfel + Joker-Auswahl in einer dehnbaren Zone (1fr). Wird es eng (Joker-Auswahl
+     sichtbar), kann nur DIESER Bereich scrollen - die Aktionen bleiben unten stehen. */
+  .dice-tray  { grid-area: dice; margin: 0; flex-direction: column; gap: 6px;
+                overflow-y: auto; min-height: 0; }
   .dice-group { display: grid; grid-template-columns: repeat(3, 34px); gap: 6px; justify-content: start; }
   .dice-label { display: none; }
   .die        { width: 34px; height: 34px; font-size: 1rem; }
 
   /* Joker-Auswahl als eigene, deutlich abgesetzte Karte mit sichtbarem Titel.
-     Sitzt unter den Würfeln (weit weg vom Würfeln-Button) und ist so gut
-     antippbar - vorher wurde sie vom Würfeln-Button überlagert. */
+     Sitzt unter den Würfeln und ist so gut antippbar. Die Auswahl-Würfel sind hier
+     bewusst kleiner, damit alle 5 Farben/Zahlen in EINE Reihe passen. */
   .joker-picker {
-    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
     background: var(--panel-2); border: 1px solid var(--accent);
-    border-radius: 8px; padding: 8px; margin-top: 2px;
+    border-radius: 8px; padding: 6px; margin-top: 2px;
   }
   .joker-picker .dice-label {
     display: block; flex-basis: 100%; margin: 0 0 2px;
     color: var(--accent); font-weight: 700; font-size: 0.75rem;
   }
+  .joker-picker .die { width: 24px; height: 24px; font-size: 0.8rem; }
 
-  /* Aktionen als Stapel (Bestätigen, Passen, Rückgängig). */
-  .action-bar { grid-area: actions; margin: 0; flex-direction: column; gap: 6px; }
-  .action-bar button { width: 100%; padding: 10px; }
+  /* Aktionen als Stapel, etwas kompakter und mit etwas Abstand nach oben (tiefer
+     gesetzt), sitzen fix unten in der Steuerspalte. */
+  .action-bar { grid-area: actions; margin: 0; padding-top: 6px; flex-direction: column; gap: 5px; }
+  .action-bar button { width: 100%; padding: 8px; font-size: 0.9rem; }
+
+  /* Zurück-Taste fix unter den Aktionen. */
+  .undo-btn { grid-area: undo; width: 100%; max-width: none; margin: 0; padding: 7px; font-size: 0.85rem; }
 
   .move-timer { grid-area: timer; margin: 0; }
   .sidebar    { display: none; }
@@ -547,11 +579,11 @@ body.light .message { color: #9a6b00; }
     right: max(8px, env(safe-area-inset-right));
     gap: 6px;
   }
-  .icon-btn { width: 34px; height: 34px; font-size: 1rem; }
+  .icon-btn { width: 31px; height: 31px; font-size: 0.9rem; }
   .end-game-btn {
     position: fixed; z-index: 51;
     top: max(6px, env(safe-area-inset-top));
-    right: calc(max(8px, env(safe-area-inset-right)) + 80px);
-    margin: 0; width: auto; padding: 7px 10px; font-size: 0.8rem;
+    right: calc(max(8px, env(safe-area-inset-right)) + 76px);
+    margin: 0; width: auto; padding: 6px 9px; font-size: 0.72rem;
   }
 }

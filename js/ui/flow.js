@@ -1,7 +1,10 @@
 // ============================================================================
 // ui/flow.js
-// Orchestriert den Spielablauf: Runden, Reihenfolge aktiv/passiv, Mensch-Zuege
-// (interaktiv) vs. KI-Zuege (automatisch), Ansagen und Endbildschirm.
+// Orchestriert den Spielablauf SCHRITTWEISE: Jeder Schritt (Würfeln, Zug eines
+// Spielers - auch der KI) wird per Klick ausgelöst. Vor jedem Zug wird ein
+// Schnappschuss gespeichert, sodass man mit der Zurück-Taste jederzeit Zug für
+// Zug zurückspringen kann. Mensch-Züge laufen interaktiv (controls.js), KI-Züge
+// werden vom Menschen angestoßen ("KI ziehen lassen") und dann animiert.
 // ============================================================================
 
 import { renderSheet } from './boardView.js';
@@ -21,160 +24,212 @@ import {
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export async function runGame(game, dom) {
-  // Abbruch-Steuerung: ueber "Spiel beenden" gesetzt; stoppt die Schleife sauber,
-  // damit keine KI-Zuege im Hintergrund weiterlaufen. control.cancel loest einen
-  // wartenden Mensch-Zug auf.
-  const control = { aborted: false, cancel: null };
+// ---------------------------------------------------------------------------
+// Schrittweiser Ablauf (event-gesteuert, mit Zurück-Funktion)
+// ---------------------------------------------------------------------------
+export function runGame(game, dom) {
+  const history = [];          // Schnappschüsse: Zustand VOR den bisherigen Zügen
+  let pendingSnapshot = null;  // Zustand, zu dem die aktuelle Entscheidung zurückkehrt
+  let currentControl = null;   // laufender Mensch-Zug (zum Abbrechen bei Zurück/Beenden)
+  let busy = false;            // sperrt Buttons während Würfel-/KI-Animationen
+
+  // "Spiel beenden": evtl. laufenden Mensch-Zug abbrechen; main.js geht ins Menü.
   dom.abortGame = () => {
-    control.aborted = true;
-    if (control.cancel) control.cancel();
+    if (currentControl && currentControl.cancel) currentControl.cancel();
+    currentControl = null;
   };
 
-  if (game.soloMode) return runSolo(game, dom, control);
+  // Zurück-Taste (liegt im HTML, ist während des ganzen Spiels sichtbar).
+  if (dom.undoBtn) dom.undoBtn.onclick = onUndo;
 
-  while (!game.finished) {
-    game.beginRound();
-    setStatus(dom, `Wurf ${game.rollCount} · Aktiver Spieler: ${game.activePlayer.name}`);
-    announceRound(dom, `Wurf ${game.rollCount} · ${game.activePlayer.name} würfelt`);
+  function updateUndoButton() {
+    if (!dom.undoBtn) return;
+    dom.undoBtn.classList.remove('hidden');
+    dom.undoBtn.disabled = history.length === 0 || busy;
+  }
+
+  // Nimmt den zuletzt gemachten Zug zurück (nach kurzer Rückfrage) und stellt den
+  // Zustand davor wieder her - egal ob es ein eigener oder ein KI-Zug war.
+  function onUndo() {
+    if (busy || history.length === 0) return;
+    if (!confirm('Zum vorherigen Zug zurück? Der zuletzt gemachte Zug wird zurückgesetzt.')) return;
+    if (currentControl && currentControl.cancel) currentControl.cancel();
+    currentControl = null;
+    game.restore(history.pop());
+    announce(dom, '↩ Zurück: der letzte Zug wurde zurückgesetzt.');
+    present();
+  }
+
+  // Zentrale Weiche: leitet aus dem Spielzustand ab, was als Nächstes zu tun ist.
+  function present() {
+    currentControl = null;
+    // Spielende: regulär (2 Farben / alle Spalten) oder im Solo nach 30 Würfen.
+    if (game.finished ||
+        (game.soloMode && game.rollCount >= SOLO_MAX_ROLLS && game.isRoundComplete())) {
+      finishGame();
+      return;
+    }
+    updateUndoButton();
+    if (game.isRoundComplete()) presentRoll();
+    else presentChooser();
+  }
+
+  // Rundenbeginn: der aktive Spieler (Mensch ODER KI) würfelt auf Knopfdruck.
+  function presentRoll() {
+    const active = game.players[game.activeIndex];
+    const aiTag = active.isHuman ? '' : ' (KI)';
+    setStatus(dom, `Wurf ${game.rollCount + 1} · Aktiv: ${active.name}${aiTag}`);
+    setTurnInfo(dom, active);
     renderBoards(dom, game, { chooserIdx: game.activeIndex });
-    // Ist ein Mensch aktiv, wird erst nach Klick auf "Wuerfeln" aufgedeckt.
-    if (game.activePlayer.isHuman) {
-      await waitForRoll(dom, control);
-      if (control.aborted) return;
-    }
-    await animateRoll(dom, game, game.activeIndex);
-    if (control.aborted) return;
-
-    while (!game.isRoundComplete()) {
-      const idx = game.currentChooserIndex();
-      const player = game.players[idx];
-      setTurnInfo(dom, player);
-      renderBoards(dom, game, { chooserIdx: idx });
-      renderScoreboard(dom, game);
-
-      if (player.isHuman) {
-        renderDiceStatic(dom, game, idx); // wird von humanTurn ersetzt
-        const res = await humanTurn(game, idx, dom, (o) => renderBoards(dom, game, o), control);
-        if (control.aborted) return;
-        if (res.action === 'pass') {
-          game.submitPass(idx);
-          announce(dom, res.timedOut ? `${player.name}: Zeit abgelaufen – gepasst.` : `${player.name} passt.`);
-        } else if (game.relaxed) {
-          // Notizblock: frei gewählte Felder ohne Würfel-/Farb-/Anzahl-Prüfung.
-          game.submitMarks(idx, res.choice.cells);
-          playMark();
-          announce(dom, `${player.name}: ${res.choice.cells.length} Feld(er) angekreuzt.`);
-        } else {
-          game.submitChoice(idx, res.choice);
-          playMark();
-          announce(dom, `${player.name}: ${describeMove(res.choice)}`);
-        }
-      } else {
-        await aiTurn(game, idx, dom, control);
-        if (control.aborted) return;
-      }
-      renderScoreboard(dom, game);
-    }
-
-    const log = game.resolveRound();
-    showRoundLog(dom, log);
     renderScoreboard(dom, game);
-    await delay(300);
+    dom.actionBar.replaceChildren();
+    dom.diceTray.replaceChildren();
+    if (dom.commentary) dom.commentary.textContent = `${active.name}${aiTag} ist aktiv – zum Würfeln tippen.`;
+
+    const btn = dom.rollBtn;
+    if (!btn) return;
+    btn.classList.remove('hidden');
+    btn.classList.add('ready');
+    btn.disabled = false;
+    btn.textContent = active.isHuman ? '🎲 Würfeln' : `🎲 Für ${active.name} (KI) würfeln`;
+    btn.onclick = async () => {
+      if (busy) return;
+      busy = true;
+      btn.disabled = true;
+      btn.classList.remove('ready');
+      updateUndoButton();
+      game.beginRound();
+      announceRound(dom, `Wurf ${game.rollCount} · ${active.name}${aiTag} würfelt`);
+      await animateRoll(dom, game, game.activeIndex);
+      busy = false;
+      present();
+    };
   }
 
-  showEnd(dom, game);
-}
-
-async function aiTurn(game, idx, dom, control = {}) {
-  const player = game.players[idx];
-  const spd = game.aiSpeed || 1; // Tempo-Faktor (>1 langsamer, <1 schneller)
-  setStatus(dom, `${player.name} (KI) überlegt …`);
-  renderDiceStatic(dom, game, idx);
-  await delay(1100 * spd);
-  if (control.aborted) return;
-
-  const move = chooseMove(player.sheet, game.availablePool(idx), game.aiDifficulty);
-  if (!move) {
-    game.submitPass(idx);
-    announce(dom, `${player.name} (KI) passt.`);
-    await delay(900 * spd);
-    return;
-  }
-
-  // 1) Felder nacheinander auswählen - so wie ein Mensch sie einzeln anklickt.
-  setStatus(dom, `${player.name} (KI) kreuzt an: ${describeMove(move)}`);
-  const selected = new Set();
-  for (const [r, c] of move.cells) {
-    selected.add(`${r},${c}`);
-    renderBoards(dom, game, { chooserIdx: idx, focusIdx: idx, selected: new Set(selected) });
-    await delay(550 * spd);
-    if (control.aborted) return;
-  }
-  await delay(550 * spd);
-  if (control.aborted) return;
-
-  // 2) Auswahl gemeinsam ankreuzen und kurz markiert stehen lassen.
-  game.submitChoice(idx, {
-    colorId: move.colorId,
-    numberId: move.numberId,
-    color: move.color,
-    count: move.count,
-    cells: move.cells,
-  });
-  playMark();
-  announce(dom, `${player.name} (KI): ${describeMove(move)}`);
-  const highlight = new Set(move.cells.map(([r, c]) => `${r},${c}`));
-  renderBoards(dom, game, { chooserIdx: idx, focusIdx: idx, highlight });
-  await delay(950 * spd);
-  renderBoards(dom, game, { chooserIdx: idx });
-}
-
-// ---------------------------------------------------------------------------
-// Solo-Variante: 2+2 Wuerfel, 30 Wuerfe, danach Wertung mit Level-Tabelle.
-// ---------------------------------------------------------------------------
-async function runSolo(game, dom, control = { aborted: false }) {
-  const player = game.players[0];
-  let rolls = 0;
-
-  while (rolls < SOLO_MAX_ROLLS) {
-    game.beginRound();
-    rolls++;
-    setStatus(dom, `Solo · Wurf ${rolls}/${SOLO_MAX_ROLLS}`);
+  // Ein Spieler ist am Zug. Mensch: interaktiv. KI: per Klick anstoßen.
+  function presentChooser() {
+    const idx = game.currentChooserIndex();
+    const player = game.players[idx];
+    const aiTag = player.isHuman ? '' : ' (KI)';
+    setStatus(dom, `${player.name}${aiTag} ist am Zug`);
     setTurnInfo(dom, player);
-    renderBoards(dom, game, { chooserIdx: 0 });
+    renderBoards(dom, game, { chooserIdx: idx });
     renderScoreboard(dom, game);
-    // Im Solo wuerfelt immer der Mensch selbst: erst nach Klick aufdecken.
-    if (player.isHuman) {
-      await waitForRoll(dom, control);
-      if (control.aborted) return;
-    }
-    await animateRoll(dom, game, 0);
-    if (control.aborted) return;
+    if (dom.rollBtn) { dom.rollBtn.classList.add('hidden'); dom.rollBtn.onclick = null; }
+
+    // Zustand merken, zu dem die Zurück-Taste diesen Zug zurücknimmt.
+    pendingSnapshot = game.snapshot();
+    updateUndoButton();
 
     if (player.isHuman) {
-      renderDiceStatic(dom, game, 0);
-      const res = await humanTurn(game, 0, dom, (o) => renderBoards(dom, game, o), control);
-      if (control.aborted) return;
-      if (res.action === 'pass') {
-        game.submitPass(0);
-        announce(dom, res.timedOut ? `Wurf ${rolls}: Zeit abgelaufen – gepasst.` : `Wurf ${rolls}: gepasst.`);
-      } else {
-        game.submitChoice(0, res.choice);
-        playMark();
-        announce(dom, `Wurf ${rolls}: ${describeMove(res.choice)}`);
-      }
+      renderDiceStatic(dom, game, idx);
+      const control = {};
+      currentControl = control;
+      humanTurn(game, idx, dom, (o) => renderBoards(dom, game, o), control).then((res) => {
+        if (res.action === 'abort') return; // durch Zurück/Beenden abgebrochen
+        currentControl = null;
+        applyHumanResult(idx, player, res);
+      });
     } else {
-      await aiTurn(game, 0, dom, control);
-      if (control.aborted) return;
+      presentAi(idx, player);
+    }
+  }
+
+  function applyHumanResult(idx, player, res) {
+    if (res.action === 'pass') {
+      game.submitPass(idx);
+      announce(dom, res.timedOut ? `${player.name}: Zeit abgelaufen – gepasst.` : `${player.name} passt.`);
+    } else if (game.relaxed) {
+      game.submitMarks(idx, res.choice.cells);
+      playMark();
+      announce(dom, `${player.name}: ${res.choice.cells.length} Feld(er) angekreuzt.`);
+    } else {
+      game.submitChoice(idx, res.choice);
+      playMark();
+      announce(dom, `${player.name}: ${describeMove(res.choice)}`);
+    }
+    history.push(pendingSnapshot);
+    advance();
+  }
+
+  // KI-Zug: erst auf Knopfdruck warten (so behält der Mensch die Kontrolle und
+  // kann jederzeit zurück), dann den Zug wie gewohnt animiert ausführen.
+  function presentAi(idx, player) {
+    renderDiceStatic(dom, game, idx);
+    dom.actionBar.replaceChildren();
+    if (dom.commentary) dom.commentary.textContent = `${player.name} (KI) wartet – zum Ziehen tippen.`;
+    const btn = document.createElement('button');
+    btn.className = 'primary';
+    btn.textContent = `🤖 ${player.name} (KI) ziehen lassen`;
+    btn.addEventListener('click', () => runAi(idx, player));
+    dom.actionBar.append(btn);
+  }
+
+  async function runAi(idx, player) {
+    if (busy) return;
+    busy = true;
+    dom.actionBar.replaceChildren();
+    updateUndoButton();
+    const spd = game.aiSpeed || 1;
+    setStatus(dom, `${player.name} (KI) überlegt …`);
+    await delay(700 * spd);
+
+    const move = chooseMove(player.sheet, game.availablePool(idx), game.aiDifficulty);
+    if (!move) {
+      game.submitPass(idx);
+      announce(dom, `${player.name} (KI) passt.`);
+      await delay(500 * spd);
+      busy = false;
+      history.push(pendingSnapshot);
+      advance();
+      return;
     }
 
+    // Felder einzeln auswählen (wie ein Mensch), dann gemeinsam ankreuzen.
+    setStatus(dom, `${player.name} (KI) kreuzt an: ${describeMove(move)}`);
+    const selected = new Set();
+    for (const [r, c] of move.cells) {
+      selected.add(`${r},${c}`);
+      renderBoards(dom, game, { chooserIdx: idx, focusIdx: idx, selected: new Set(selected) });
+      await delay(450 * spd);
+    }
+    await delay(400 * spd);
+
+    game.submitChoice(idx, {
+      colorId: move.colorId,
+      numberId: move.numberId,
+      color: move.color,
+      count: move.count,
+      cells: move.cells,
+    });
+    playMark();
+    announce(dom, `${player.name} (KI): ${describeMove(move)}`);
+    const highlight = new Set(move.cells.map(([r, c]) => `${r},${c}`));
+    renderBoards(dom, game, { chooserIdx: idx, focusIdx: idx, highlight });
+    await delay(700 * spd);
+    busy = false;
+    history.push(pendingSnapshot);
+    advance();
+  }
+
+  // Nach einem Zug weiterschalten: nächster Chooser oder Runde auswerten.
+  function advance() {
+    renderScoreboard(dom, game);
+    if (!game.isRoundComplete()) { present(); return; }
     const log = game.resolveRound();
     showRoundLog(dom, log);
     renderScoreboard(dom, game);
+    present();
   }
 
-  showEnd(dom, game, true);
+  function finishGame() {
+    currentControl = null;
+    if (dom.undoBtn) dom.undoBtn.classList.add('hidden');
+    if (dom.rollBtn) { dom.rollBtn.classList.add('hidden'); dom.rollBtn.onclick = null; }
+    showEnd(dom, game, game.soloMode);
+  }
+
+  present();
 }
 
 // ---------------------------------------------------------------------------
@@ -189,26 +244,6 @@ function setTurnInfo(dom, player) {
   dom.turnInfo.textContent = `${player.name}: ${player.sheet.computeScore().total} P.`;
 }
 
-// Wartet darauf, dass der Mensch "Wuerfeln" klickt; deckt danach das bereits
-// in beginRound() gewuerfelte Ergebnis per animateRoll auf. control.cancel
-// ("Spiel beenden") loest das Warten ebenfalls sauber auf.
-function waitForRoll(dom, control) {
-  return new Promise((resolve) => {
-    const btn = dom.rollBtn;
-    if (!btn) { resolve(); return; }
-    btn.disabled = false;
-    btn.classList.add('ready');
-    const done = () => {
-      btn.disabled = true;
-      btn.classList.remove('ready');
-      btn.onclick = null;
-      control.cancel = null;
-      resolve();
-    };
-    btn.onclick = done;
-    control.cancel = done;
-  });
-}
 // Rendert ALLE Spieler-Bloecke gleichzeitig, jeden in einer eigenen Karte.
 // opts: { chooserIdx, focusIdx, interactive, highlight:Set, selected:Set, onCellClick }
 //   chooserIdx  - Block des gerade Waehlenden hervorheben ("am Zug")

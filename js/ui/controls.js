@@ -195,13 +195,14 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       const pass = button('Passen', () => finish({ action: 'pass' }));
       pass.classList.add('pass');
 
-      const undo = button('↶ Rückgängig', () => {
+      const undo = button('↶ Feld zurück', () => {
         if (state.selected.length) {
           state.selected.pop();
           setHint('');
           redraw();
         }
       });
+      undo.title = 'Zuletzt gewähltes Feld wieder abwählen';
       undo.disabled = state.selected.length === 0;
 
       dom.actionBar.append(confirm, pass, undo);
@@ -293,13 +294,14 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       confirm.disabled = !canConfirm;
       confirm.classList.add('primary');
 
-      const undo = button('↶ Rückgängig', () => {
+      const undo = button('↶ Feld zurück', () => {
         if (state.selected.length) {
           state.selected.pop();
           setHint('');
           redraw();
         }
       });
+      undo.title = 'Zuletzt gewähltes Feld wieder abwählen';
       undo.disabled = state.selected.length === 0;
 
       const pass = button('Passen', () => finish({ action: 'pass' }));
