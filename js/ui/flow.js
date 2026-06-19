@@ -547,7 +547,9 @@ function showEnd(dom, game, solo = false) {
 
   const head = document.createElement('p');
   head.className = 'winner-line';
-  if (solo) {
+  // Bei einem einzelnen Block (Solo oder PvP/Notizblock auf dem eigenen Handy) gibt
+  // es keinen Sieger-Vergleich - nur den eigenen Endstand zeigen.
+  if (solo || rows.length === 1) {
     head.textContent = `Endstand: ${rows[0].total} Punkte`;
   } else {
     const winners = rows.filter((r) => r.isWinner).map((r) => r.player.name);

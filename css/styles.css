@@ -134,6 +134,11 @@ button.big { font-size: 1.1rem; padding: 12px 24px; margin-top: 10px; }
 .die.disabled { opacity: 0.28; cursor: not-allowed; }
 .die.selected { outline: 3px solid var(--accent); outline-offset: 1px; transform: translateY(-2px); }
 
+/* PvP/Notizblock: die Würfel sind hier nur Referenz (man würfelt real am Tisch) und
+   es gibt nur EINEN Block - daher viel Platz. Würfel ~50% größer und gut lesbar.
+   Im Querformat wird das weiter unten wieder zurückgenommen (dort ist es eng). */
+body.mode-notepad .die { width: 60px; height: 60px; font-size: 1.6rem; border-radius: 10px; }
+
 /* Wuerfelanimation: kurzes Wackeln/Kippen waehrend des Wurfs. */
 .die.rolling { animation: dieRoll 0.16s linear infinite; }
 @keyframes dieRoll {
@@ -471,7 +476,7 @@ body.light .message { color: #9a6b00; }
      "Spiel beenden" wandert nach oben rechts neben Theme/Ton (siehe unten). */
   #game-screen:not(.hidden) {
     display: grid;
-    grid-template-columns: 1fr minmax(140px, 180px); /* Block | schmale Steuerspalte */
+    grid-template-columns: 1fr minmax(150px, 190px); /* Block | schmale Steuerspalte */
     grid-template-rows: auto auto 1fr auto auto auto;
     grid-template-areas:
       "board comment"
@@ -496,7 +501,9 @@ body.light .message { color: #9a6b00; }
      fixe Cluster (Theme/Ton + "Spiel beenden") oben rechts frei. */
   .commentary-box {
     grid-area: comment; display: block; overflow-y: auto;
-    margin-top: 40px; max-height: 30dvh;
+    /* Bewusst flach gehalten, damit darunter genug Platz für Würfel + (ggf. beide)
+       Joker-Auswahlen bleibt. */
+    margin-top: 40px; max-height: 18dvh;
     background: var(--panel-2); color: var(--muted);
     border: 1px solid var(--line); border-radius: 8px;
     padding: 6px 10px; font-size: 0.85rem; line-height: 1.3; min-height: 1.2em;
@@ -520,6 +527,10 @@ body.light .message { color: #9a6b00; }
   .dice-group { display: grid; grid-template-columns: repeat(3, 34px); gap: 6px; justify-content: start; }
   .dice-label { display: none; }
   .die        { width: 34px; height: 34px; font-size: 1rem; }
+  /* Im engen Querformat die PvP-Vergrößerung zurücknehmen (Block hat hier Vorrang),
+     dafür etwas größer als die normalen Würfel, da es nur einen Block gibt. */
+  body.mode-notepad .dice-group { grid-template-columns: repeat(3, 40px); }
+  body.mode-notepad .die { width: 40px; height: 40px; font-size: 1.1rem; border-radius: 8px; }
 
   /* Joker-Auswahl als eigene, deutlich abgesetzte Karte mit sichtbarem Titel.
      Sitzt unter den Würfeln und ist so gut antippbar. Die Auswahl-Würfel sind hier
@@ -533,12 +544,16 @@ body.light .message { color: #9a6b00; }
     display: block; flex-basis: 100%; margin: 0 0 2px;
     color: var(--accent); font-weight: 700; font-size: 0.75rem;
   }
-  .joker-picker .die { width: 24px; height: 24px; font-size: 0.8rem; }
+  /* Auswahl-Würfel klein genug, dass alle 5 Farben/Zahlen in EINE Reihe passen -
+     so brauchen beide Joker-Auswahlen (Farbe + Zahl) zusammen wenig Höhe. */
+  .joker-picker { gap: 3px; padding: 5px; }
+  .joker-picker .die { width: 22px; height: 22px; font-size: 0.78rem; }
 
-  /* Aktionen als Stapel, etwas kompakter und mit etwas Abstand nach oben (tiefer
-     gesetzt), sitzen fix unten in der Steuerspalte. */
-  .action-bar { grid-area: actions; margin: 0; padding-top: 6px; flex-direction: column; gap: 5px; }
-  .action-bar button { width: 100%; padding: 8px; font-size: 0.9rem; }
+  /* Aktionen als Stapel, kompakt und fix unten in der Steuerspalte. So bleibt
+     darüber Platz für Würfel + beide Joker-Auswahlen, ohne dass sich etwas
+     mit dem Bestätigen-Knopf überschneidet. */
+  .action-bar { grid-area: actions; margin: 0; padding-top: 5px; flex-direction: column; gap: 4px; }
+  .action-bar button { width: 100%; padding: 7px; font-size: 0.85rem; }
 
   /* Zurück-Taste fix unter den Aktionen. */
   .undo-btn { grid-area: undo; width: 100%; max-width: none; margin: 0; padding: 7px; font-size: 0.85rem; }

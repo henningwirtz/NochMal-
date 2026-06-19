@@ -93,8 +93,11 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   Dynamic Island/Home-Indikator). Querformat (`orientation: landscape` & `max-height: 600px`):
   Grid mit Block links + schmaler Steuerspalte rechts; Steuerspalte von oben =
   KI-Aktionen/Kommentar (prominent), Würfeln-Button, Würfel + Joker-Auswahl
-  (dehnbare, bei Bedarf scrollbare 1fr-Zone – Joker-Würfel sind hier kleiner, damit
-  alle 5 Farben/Zahlen in EINE Reihe passen), Aktionen, „↩ Zug zurück", Zug-Timer.
+  (dehnbare, bei Bedarf scrollbare 1fr-Zone – Joker-Würfel sind hier klein (22 px),
+  damit alle 5 Farben/Zahlen in EINE Reihe passen und Farb- + Zahl-Joker zusammen
+  wenig Höhe brauchen; Kommentar flach `max-height: 18dvh`, Aktionen kompakt – so
+  überschneidet sich auch bei BEIDEN Joker-Auswahlen nichts mit „Bestätigen"),
+  Aktionen, „↩ Zug zurück", Zug-Timer.
   Die Aktionen sitzen fix UNTER der Würfel/Joker-Zone und können die Joker-Auswahl so
   nie verdecken. „Spiel beenden" sitzt fix oben rechts neben Theme/Ton.
   In jedem Block stehen Farb-Bonus + Joker per `column-reverse` ÜBER dem Raster;
@@ -131,7 +134,14 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   angekreuzt" auch auf Sternfeldern eindeutig.
 - Spielende: kein eigener Bildschirm; die Endwertung erscheint inline im `#end-panel`
   über den Blöcken (samt „Neues Spiel"-Button), die Blöcke bleiben sichtbar. Beim
-  Spielende werden alle Ergebnisse in die Bestenliste geschrieben.
+  Spielende werden alle Ergebnisse in die Bestenliste geschrieben. Das Spiel endet
+  automatisch, sobald ein Spieler **2 komplette Farben** (oder alle Spalten) hat –
+  grid-basiert in `resolveRound`, auch im PvP/Notizblock-Modus (`relaxed`, ein Block);
+  die Übersicht zeigt Bonus/Spalten/Joker/Sterne + TOTAL je Block. Bei nur EINEM Block
+  (Solo oder PvP) steht „Endstand: X Punkte" statt „Sieger".
+- PvP/Notizblock-Modus (`body.mode-notepad`): die Würfel sind nur Referenz (man würfelt
+  real am Tisch) und es gibt nur EINEN Block – daher ~50 % größer (60 px im Hochformat;
+  im engen Querformat auf 40 px zurückgenommen).
 - „Spiel beenden" (`#end-game-btn` im Spiel-Header): verwirft das laufende Spiel und
   geht zurück ins Menü. `runGame` setzt dazu `dom.abortGame`; weil der Ablauf
   event-gesteuert ist (keine durchlaufende Schleife), bricht es nur einen evtl. gerade

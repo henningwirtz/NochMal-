@@ -157,5 +157,16 @@ export function runTests() {
     assert(game.finished, 'Spiel muss beendet sein');
   });
 
+  // 10) Auch im PvP/Notizblock-Modus (relaxed, ein Spieler) endet das Spiel bei
+  // 2 kompletten Farben automatisch.
+  test('PvP/Notizblock: Spielende bei 2 Farben', () => {
+    const game = new Game([{ name: 'Du', isHuman: true }], { relaxed: true });
+    markColor(game.players[0].sheet, COLOR_ORDER[0]);
+    markColor(game.players[0].sheet, COLOR_ORDER[1]);
+    forceRoundComplete(game);
+    game.resolveRound();
+    assert(game.finished, 'Spiel muss beendet sein');
+  });
+
   return results;
 }
