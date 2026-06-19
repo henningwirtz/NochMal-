@@ -219,6 +219,9 @@ window.addEventListener('focus', () => {
 });
 
 function backToSetup() {
+  // Theme/Ton-Icons aus der Spiel-Kopfzeile zurück in den Body holen (dort wieder
+  // oben rechts fixiert für den Startbildschirm).
+  document.body.appendChild($('top-controls'));
   $('end-panel').classList.add('hidden');
   $('game-screen').classList.add('hidden');
   $('setup-screen').classList.remove('hidden');
@@ -296,6 +299,10 @@ startBtn.addEventListener('click', () => {
   $('setup-screen').classList.add('hidden');
   dom.endPanel.classList.add('hidden');
   dom.gameScreen.classList.remove('hidden');
+  // Theme/Ton-Icons in die Spiel-Kopfzeile verschieben: dort werden sie zu echten
+  // Grid-Geschwistern von "Spiel beenden" und sitzen so zuverlässig in DERSELBEN
+  // Reihe daneben (statt als frei schwebendes fixed-Element nur ungefähr passend).
+  dom.gameScreen.querySelector('.game-header').appendChild($('top-controls'));
   dom.log.replaceChildren();
 
   runGame(game, dom);

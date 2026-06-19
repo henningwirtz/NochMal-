@@ -542,10 +542,9 @@ body.mode-notepad .totals { margin-top: 0; }
   #game-screen:not(.hidden) {
     display: grid;
     grid-template-columns: 1fr minmax(138px, 176px); /* Block | schmale Steuerspalte (~8% schmaler) */
-    grid-template-rows: auto auto auto auto 1fr auto auto auto;
+    grid-template-rows: auto auto auto 1fr auto auto auto;
     grid-template-areas:
       "board ctl"
-      "board score"
       "board comment"
       "board roll"
       "board dice"
@@ -555,6 +554,22 @@ body.mode-notepad .totals { margin-top: 0; }
     gap: 8px;
     height: 100dvh;
     align-items: start;
+  }
+  /* PvP/Notizblock: eigener Spalten-Aufbau. Die Punkte sind hier KEIN eigenes Feld
+     mehr (sie stehen neben dem Joker über dem Block, s. u.), und die Referenz-Würfel
+     sollen GANZ OBEN direkt unter "Spiel beenden" stehen und IMMER komplett sichtbar
+     sein (kein Scrollen). Darum: Würfel (auto, volle Höhe) zuoberst, darunter der
+     Würfeln-Knopf und die Aktionen; der dehnbare Rest (1fr) fällt ans untere Ende. */
+  body.mode-notepad #game-screen:not(.hidden) {
+    grid-template-rows: auto auto auto auto auto auto 1fr;
+    grid-template-areas:
+      "board ctl"
+      "board dice"
+      "board roll"
+      "board actions"
+      "board undo"
+      "board timer"
+      "board .";
   }
   .game-main       { display: contents; }            /* Kinder ins Grid heben */
   .game-header     { display: contents; }            /* Header-Kinder ins Grid heben */
@@ -569,15 +584,6 @@ body.mode-notepad .totals { margin-top: 0; }
      hervorgehobene Block. So ist oben Platz fürs Steuer-Cluster (siehe unten). */
   .status-bar, .turn-info { display: none; }
 
-  /* PvP/Notizblock: die Punkte stehen NICHT mehr als Band über dem Block (pb-head
-     entfällt unten), sondern als eigenes Feld oben in der rechten Steuerspalte.
-     Das gibt dem Block die volle Höhe (und Breite). */
-  body.mode-notepad .turn-info {
-    display: block; grid-area: score; margin: 0; align-self: start;
-    text-align: center; font-weight: 800; color: var(--accent);
-    font-size: 1.05rem; background: var(--panel-2);
-    border: 1px solid var(--line); border-radius: 8px; padding: 6px 4px;
-  }
   /* Im PvP gibt es keinen KI-Kommentar -> den (leeren) Kasten ausblenden, spart Höhe. */
   body.mode-notepad .commentary-box { display: none; }
 
@@ -611,6 +617,9 @@ body.mode-notepad .totals { margin-top: 0; }
      (Bestätigen/Passen) zu laufen. So überdeckt nichts mehr die Würfel. */
   .dice-tray  { grid-area: dice; align-self: stretch; margin: 0; flex-direction: column;
                 gap: 6px; overflow-y: auto; min-height: 0; }
+  /* PvP/Notizblock: die Würfel stehen ganz oben unter "Spiel beenden" und sind in
+     ihrer natürlichen Größe IMMER komplett sichtbar (kein interner Scroll). */
+  body.mode-notepad .dice-tray { align-self: start; overflow: visible; }
   .dice-group { display: grid; grid-template-columns: repeat(3, 34px); gap: 6px; justify-content: start; }
   .dice-label { display: none; }
   .die        { width: 34px; height: 34px; font-size: 1rem; }
@@ -668,6 +677,18 @@ body.mode-notepad .totals { margin-top: 0; }
   .panel-title { margin: 4px 0 2px; }
   .bonus-box { width: 26px; }
   .totals { display: none; }
+  /* PvP/Notizblock: die Punkte stehen NEBEN dem Joker (über dem Block). Vom
+     Wertungs-Kasten wird nur die TOTAL-Zeile gezeigt - kompakt, ohne die volle
+     Aufschlüsselung, damit die Reihe schmal bleibt. */
+  body.mode-notepad .totals {
+    display: flex; align-items: center; margin: 0;
+    background: transparent; padding: 0;
+  }
+  body.mode-notepad .totals > div { display: none; }
+  body.mode-notepad .totals > .total-line {
+    display: flex; gap: 8px; border: none; margin: 0; padding: 0;
+    color: var(--accent); font-size: 1.1rem; white-space: nowrap;
+  }
 
   /* Endwertung über dem Block-Bereich (scrollbar), Blöcke bleiben sichtbar. */
   .end-panel:not(.hidden) {
@@ -687,14 +708,14 @@ body.mode-notepad .totals { margin-top: 0; }
      (sie liegen im HTML außerhalb des Spiel-Bereichs), sitzen aber genau am Kopf der
      rechten Spalte. */
   /* Oberste Zeile der rechten Spalte = EINE Reihe: links der (kleinere) "Spiel
-     beenden"-Knopf, rechts daneben die beiden Icons (Theme/Ton). Die Icons liegen im
-     HTML außerhalb des Spiel-Bereichs und bleiben deshalb technisch fixiert - sie sind
-     aber exakt auf die rechte Spaltenkante und die Knopfhöhe ausgerichtet, sodass alles
-     wie eine zusammenhängende Reihe wirkt. */
-  #top-controls {
-    top: max(16px, env(safe-area-inset-top));      /* gleiche Höhe wie der Knopf (Body-Padding) */
-    right: max(16px, env(safe-area-inset-right));   /* bündig mit der rechten Spaltenkante */
-    gap: 6px;
+     beenden"-Knopf, rechts daneben die beiden Icons (Theme/Ton). Beim Spielstart werden
+     die Icons per JS in die Kopfzeile verschoben (siehe main.js) - dort sind sie echte
+     Grid-Geschwister und teilen sich mit "Spiel beenden" das Feld "ctl" (eins links-,
+     eins rechtsbündig), sitzen also zuverlässig in DERSELBEN Reihe daneben (kein
+     fixed-Element, das nur ungefähr passt). */
+  .game-header #top-controls {
+    position: static; grid-area: ctl; align-self: start; justify-self: end;
+    z-index: auto; gap: 6px;
   }
   .icon-btn { width: 30px; height: 30px; font-size: 0.85rem; }
   .end-game-btn {

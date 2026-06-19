@@ -125,25 +125,31 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   nichts schwebt mehr über dem Block. **Oberste Zeile der Steuerspalte = EINE Reihe**
   (grid-area `ctl`): links der kleinere **„Spiel beenden"**-Knopf
   (`width: calc(100% − 72px)`, `height: 30px`, ganz oben), rechts daneben die beiden Icons
-  Theme/Ton. Die Icons liegen im HTML außerhalb des Spiel-Bereichs und bleiben deshalb
-  technisch `position: fixed`, sind aber exakt auf die rechte Spaltenkante
-  (`right: max(16px, …)`) und die Knopfhöhe (`top: max(16px, …)`) ausgerichtet, sodass
-  alles wie eine zusammenhängende Reihe wirkt.
-  Darunter: **Punkte** (grid-area `score`, nur PvP – `.turn-info` als eigenes Feld in der
-  Spalte, s. u.), KI-Aktionen/Kommentar (prominent, nur KI), Würfeln-Button, Würfel +
-  Joker-Auswahl (dehnbare 1fr-Zone, `align-self: stretch` → scrollt bei Bedarf INTERN,
-  läuft also nicht mehr über die Aktionen; Joker-Würfel klein (22 px), damit alle 5
-  Farben/Zahlen in EINE Reihe passen), Aktionen, „↩ Zug zurück", Zug-Timer.
-  Die Aktionen sitzen fix UNTER der Würfel/Joker-Zone und können die Joker-Auswahl so
-  nie verdecken.
+  Theme/Ton. Die Icons (`#top-controls`) werden beim Spielstart per JS in die `.game-header`
+  **verschoben** (`main.js`; bei „Neues Spiel"/Beenden zurück in den Body) – dadurch sind
+  sie im Querformat echte **Grid-Geschwister** und teilen sich mit „Spiel beenden" das Feld
+  `ctl` (`justify-self: start` vs. `end`), sitzen also zuverlässig in DERSELBEN Reihe
+  daneben statt als frei schwebendes `position: fixed`-Element nur ungefähr zu passen
+  (`.game-header #top-controls { position: static; grid-area: ctl }`). Auf dem
+  Startbildschirm/Desktop bleiben sie wie gehabt fixiert oben rechts.
+  Darunter: KI-Aktionen/Kommentar (prominent, nur KI), Würfeln-Button, Würfel +
+  Joker-Auswahl (im KI-Modus dehnbare 1fr-Zone, `align-self: stretch` → scrollt bei Bedarf
+  INTERN; Joker-Würfel klein (22 px), damit alle 5 Farben/Zahlen in EINE Reihe passen),
+  Aktionen, „↩ Zug zurück", Zug-Timer. Im KI-Modus sitzen die Aktionen fix UNTER der
+  Würfel/Joker-Zone und können die Joker-Auswahl so nie verdecken. **PvP/Notizblock** hat
+  einen **eigenen Spalten-Aufbau** (`body.mode-notepad #game-screen`): die Referenz-Würfel
+  stehen GANZ OBEN direkt unter „Spiel beenden" und sind in natürlicher Größe **immer
+  komplett sichtbar** (`align-self: start; overflow: visible`, kein interner Scroll), der
+  dehnbare Rest (1fr) fällt ans untere Spaltenende.
   **Scrollen:** Im **KI-Modus** ist der aktive Block (Spieler 1) sofort sichtbar, weitere
   Spieler-Blöcke bleiben per Scrollen im Block-Bereich erreichbar
   (`.board-container { overflow-y: auto }`); die Punkte stehen pro Block im Block-Kopf
   (`.pb-head`). Im **PvP/Notizblock** gibt es nur EINEN Block – er scrollt **nie**
   (`body.mode-notepad .board-container { overflow: visible }`). **Block größer:** der
-  Block-Kopf (`.pb-head`) entfällt hier ganz, die **Punkte** wandern in die rechte Spalte
-  (`body.mode-notepad .turn-info`, grid-area `score`); über dem Raster bleibt nur noch die
-  kompakte Farb-Bonus/Joker-Reihe und der KI-Kommentar ist ausgeblendet. Dadurch reicht
+  Block-Kopf (`.pb-head`) entfällt hier ganz; die **Punkte** stehen NEBEN dem Joker über
+  dem Block (nur die TOTAL-Zeile aus `.totals` wird im PvP wieder eingeblendet) – über dem
+  Raster bleibt also die kompakte Farb-Bonus/Joker/Punkte-Reihe und der KI-Kommentar ist
+  ausgeblendet. Dadurch reicht
   weniger Höhen-Reserve – `--cell: clamp(16px, min((100vw − 200px)/15, (100dvh − 116px)/9), 42px)`
   – und der Block füllt den Platz über/neben sich aus, passt aber weiter garantiert ohne
   Scrollen auf eine Bildschirmhöhe.
@@ -199,21 +205,24 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   reduzierter Wert), erneutes Tippen gibt den vollen Wert wieder frei
   (`game.toggleColumnStrikeByOther`/`toggleColorStrikeByOther`, stuft auch einen bereits
   gewerteten Wert passend um; `sheet.unstrikeColumnTop`/`unstrikeColorFirst`).
-  **Wertungspanel** (`.side-panel`): Farb-Bonus, Joker UND Punkte-Übersicht stehen in
-  EINER kompakten Reihe nebeneinander (statt untereinander) → alles rückt nach oben, der
-  Block bekommt mehr Platz. **Punkte:** ohne Spielername, nur `… P.`
-  (`#turn-info`, `setTurnInfo(…, relaxed)`) – im Hochformat oben im Header; im Querformat
-  als eigenes Feld oben in der rechten Steuerspalte (grid-area `score`,
-  `body.mode-notepad .turn-info`), nicht mehr am Block. Der Block-Kopf (`.pb-head`) ist im
-  PvP-Querformat komplett ausgeblendet, damit der Block die volle Höhe bekommt. Im engen
-  Querformat ist die rechte Steuerspalte ~8 % schmaler (`minmax(138px, 176px)`).
+  **Wertungspanel** (`.side-panel`): Farb-Bonus, Joker UND Punkte stehen in EINER kompakten
+  Reihe nebeneinander (statt untereinander) → alles rückt nach oben, der Block bekommt mehr
+  Platz. **Punkte:** im Hochformat ohne Spielername, nur `… P.` (`#turn-info`,
+  `setTurnInfo(…, relaxed)`) oben im Header. Im **Querformat** ist `#turn-info` ausgeblendet;
+  die Punkte stehen stattdessen NEBEN dem Joker über dem Block – aus dem Wertungs-Kasten
+  `.totals` wird im PvP-Querformat nur die TOTAL-Zeile wieder eingeblendet (Rest `display:
+  none`). Der Block-Kopf (`.pb-head`) ist im PvP-Querformat komplett ausgeblendet, damit der
+  Block die volle Höhe bekommt. Im engen Querformat ist die rechte Steuerspalte ~8 %
+  schmaler (`minmax(138px, 176px)`).
 - KI-Modus: gleiche Punkteanzeige-Idee – auf Handybreite (`@media max-width: 760px`) steht
   das Wertungspanel (`.side-panel`) ebenfalls als kompakte Reihe unter dem Raster (Farb-
   Bonus + Joker + Punkte nebeneinander), damit jeder Block weniger Höhe braucht.
 - „Spiel beenden" (`#end-game-btn` im Spiel-Header): verwirft das laufende Spiel und
   geht zurück ins Menü. Im Querformat (Touch) sitzt der (kleinere) Knopf via
-  `grid-area: ctl` ganz oben links in der rechten Steuerspalte; die beiden fixierten Icons
-  Theme/Ton stehen rechts daneben in derselben Reihe (s. o.). `runGame` setzt dazu `dom.abortGame`; weil der Ablauf
+  `grid-area: ctl` ganz oben links in der rechten Steuerspalte; die beiden Theme/Ton-Icons
+  (`#top-controls`) werden beim Spielstart per JS in die `.game-header` verschoben und
+  teilen sich dann als echte Grid-Geschwister dieselbe `ctl`-Reihe rechts daneben (s. o.).
+  `runGame` setzt dazu `dom.abortGame`; weil der Ablauf
   event-gesteuert ist (keine durchlaufende Schleife), bricht es nur einen evtl. gerade
   laufenden Mensch-Zug ab (`currentControl.cancel`, liefert `{ action:'abort' }`). Danach
   geht `main.js` zurück ins Menü (kein Eintrag in der Bestenliste).
