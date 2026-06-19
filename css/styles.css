@@ -218,6 +218,9 @@ body.mode-notepad .dice-group { flex-wrap: wrap; }
   overflow-x: auto;
 }
 .player-board.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+/* Wer NICHT am Zug ist, bekommt einen gelben Rahmen - so sind aktiv (orange) und
+   inaktiv (gelb) ohne extra "am Zug"-Text unterscheidbar. */
+.player-board:not(.active) { border-color: #ffd23f; }
 .pb-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
 .pb-name { font-weight: 800; }
 .pb-score { color: var(--accent); font-weight: 800; }
@@ -311,6 +314,9 @@ body.mode-notepad .dice-group { flex-wrap: wrap; }
 .totals { margin-top: 12px; background: var(--panel); border-radius: 8px; padding: 8px 10px; }
 .totals div { display: flex; justify-content: space-between; padding: 2px 0; color: var(--muted); }
 .totals .total-line { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 6px; color: var(--ink); font-weight: 800; font-size: 1.1rem; }
+/* Spielername unter den Punkten - nur im Querformat sichtbar (im Hoch-/Desktop-Format
+   steht der Name im Block-Kopf). */
+.sheet-name { display: none; font-weight: 700; }
 
 /* ---------- Scoreboard / log ---------- */
 .scoreboard { display: flex; flex-direction: column; gap: 6px; }
@@ -643,9 +649,10 @@ body.mode-notepad .totals { margin-top: 0; }
      Querformat (geringe Höhe) bleibt der Block kompakt. */
   body.mode-notepad .cell { height: var(--cell); }
   body.mode-notepad .col-letter { height: 18px; }
-  /* Punkte stehen jetzt in der rechten Spalte (.turn-info, s. o.) -> der Block-Kopf
-     über dem Raster entfällt komplett, damit der Block die volle Höhe bekommt. */
-  body.mode-notepad .pb-head { display: none; }
+  /* Block-Kopf über dem Raster entfällt im Querformat KOMPLETT (beide Modi). Punkte
+     stehen neben dem Joker, der Name darunter (KI) bzw. nur Punkte (PvP) - so bekommt
+     der Block die volle Höhe und die unteren Spaltensummen bleiben sichtbar. */
+  .pb-head { display: none; }
 
   /* Joker-Auswahl als eigene, deutlich abgesetzte Karte mit sichtbarem Titel.
      Sitzt unter den Würfeln und ist so gut antippbar. Die Auswahl-Würfel sind hier
@@ -688,19 +695,21 @@ body.mode-notepad .totals { margin-top: 0; }
   .side-panel { min-width: 0; display: flex; flex-direction: row; flex-wrap: wrap; gap: 14px; }
   .panel-title { margin: 4px 0 2px; }
   .bonus-box { width: 26px; }
-  .totals { display: none; }
-  /* PvP/Notizblock: die Punkte stehen NEBEN dem Joker (über dem Block). Vom
-     Wertungs-Kasten wird nur die TOTAL-Zeile gezeigt - kompakt, ohne die volle
-     Aufschlüsselung, damit die Reihe schmal bleibt. */
-  body.mode-notepad .totals {
+  /* Punkte stehen NEBEN dem Joker (über dem Block) - in BEIDEN Modi. Vom Wertungs-
+     Kasten wird nur die TOTAL-Zeile gezeigt (kompakt, ohne volle Aufschlüsselung).
+     Im KI-Modus steht der Spielername direkt darunter (Punkte oben, Name darunter). */
+  .totals-wrap { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+  .totals {
     display: flex; align-items: center; margin: 0;
     background: transparent; padding: 0;
   }
-  body.mode-notepad .totals > div { display: none; }
-  body.mode-notepad .totals > .total-line {
+  .totals > div { display: none; }
+  .totals > .total-line {
     display: flex; gap: 8px; border: none; margin: 0; padding: 0;
     color: var(--accent); font-size: 1.1rem; white-space: nowrap;
   }
+  /* Spielername klein unter den Punkten (nur KI-Modus - im PvP wird kein Name gesetzt). */
+  .sheet-name { display: block; font-size: 0.8rem; color: var(--ink); line-height: 1.1; }
 
   /* Endwertung über dem Block-Bereich (scrollbar), Blöcke bleiben sichtbar. */
   .end-panel:not(.hidden) {

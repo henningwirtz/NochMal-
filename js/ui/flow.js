@@ -390,18 +390,23 @@ function renderBoards(dom, game, opts = {}) {
     card.className = 'player-board';
     if (p.id === chooserIdx) card.classList.add('active');
 
+    // Block-Kopf (Name + Punkte) - im Hoch-/Desktop-Format. "am Zug" entfaellt: wer
+    // dran ist, zeigt jetzt die Rahmenfarbe (aktiv orange, inaktiv gelb). Im Querformat
+    // ist der Kopf ausgeblendet; dort stehen Punkte + Name neben dem Joker (siehe CSS).
     const head = document.createElement('div');
     head.className = 'pb-head';
     const score = p.sheet.computeScore();
     head.innerHTML =
       `<span class="pb-name">${escapeHtml(p.name)}${p.isHuman ? '' : ' (KI)'}</span>` +
-      `<span class="pb-score">${score.total} P.</span>` +
-      (p.id === chooserIdx ? '<span class="pb-turn">am Zug</span>' : '');
+      `<span class="pb-score">${score.total} P.</span>`;
     card.appendChild(head);
 
+    // Name nur im KI-/Solo-Modus ins Sheet durchreichen (Querformat: Name unter den
+    // Punkten neben dem Joker). Im PvP/Notizblock gibt es nur EINEN Block -> kein Name.
+    const ident = game.relaxed ? {} : { playerName: `${p.name}${p.isHuman ? '' : ' (KI)'}` };
     const sheetOptions = p.id === focusIdx
-      ? { interactive, highlight, selected, onCellClick, onColumnClick, onColorClick, onJokerClick }
-      : {};
+      ? { ...ident, interactive, highlight, selected, onCellClick, onColumnClick, onColorClick, onJokerClick }
+      : ident;
     card.appendChild(renderSheet(p.sheet, sheetOptions));
     dom.boardContainer.appendChild(card);
   }

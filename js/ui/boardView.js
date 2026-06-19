@@ -30,6 +30,7 @@ export function renderSheet(sheet, options = {}) {
   const {
     interactive = false, highlight = new Set(), selected = new Set(), onCellClick,
     onColumnClick = null, onColorClick = null, onJokerClick = null,
+    playerName = null,
   } = options;
 
   const root = document.createElement('div');
@@ -95,7 +96,7 @@ export function renderSheet(sheet, options = {}) {
   root.appendChild(gridArea);
 
   // --- Seitliches Wertungspanel -------------------------------------------
-  root.appendChild(renderSidePanel(sheet, onColorClick, onJokerClick));
+  root.appendChild(renderSidePanel(sheet, onColorClick, onJokerClick, playerName));
 
   return root;
 }
@@ -117,7 +118,7 @@ function appendScoreRow(gridArea, values, sheet, which) {
   }
 }
 
-function renderSidePanel(sheet, onColorClick = null, onJokerClick = null) {
+function renderSidePanel(sheet, onColorClick = null, onJokerClick = null, playerName = null) {
   const panel = document.createElement('div');
   panel.className = 'side-panel';
 
@@ -191,8 +192,13 @@ function renderSidePanel(sheet, onColorClick = null, onJokerClick = null) {
   }
   jokerGroup.appendChild(jokerRow);
 
-  // Punkte-Uebersicht.
+  // Punkte-Uebersicht. Im Querformat wird nur die TOTAL-Zeile gezeigt; darunter steht
+  // (sofern uebergeben) der Spielername - so stehen Punkte + Name beim KI-Modus
+  // kompakt neben dem Joker (statt im separaten Block-Kopf).
   const score = sheet.computeScore();
+  const totalsWrap = document.createElement('div');
+  totalsWrap.className = 'totals-wrap';
+
   const totals = document.createElement('div');
   totals.className = 'totals';
   totals.innerHTML = `
@@ -202,7 +208,15 @@ function renderSidePanel(sheet, onColorClick = null, onJokerClick = null) {
     <div><span>Sterne offen (−2)</span><span>−${score.starPenalty}</span></div>
     <div class="total-line"><span>TOTAL</span><span>${score.total}</span></div>
   `;
-  panel.appendChild(totals);
+  totalsWrap.appendChild(totals);
+
+  if (playerName) {
+    const nameEl = document.createElement('div');
+    nameEl.className = 'sheet-name';
+    nameEl.textContent = playerName;
+    totalsWrap.appendChild(nameEl);
+  }
+  panel.appendChild(totalsWrap);
 
   return panel;
 }

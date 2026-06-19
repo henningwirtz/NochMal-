@@ -140,23 +140,33 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   KI-Elemente ergänzt): GANZ OBEN die **Würfel** (groß, 42 px, `align-self: start` direkt
   unter „Spiel beenden"), dann die **Text-Anzeige** (KI-Kommentar), dann Würfeln-Button,
   Aktionen, „↩ Zug zurück", Zug-Timer, unten freier 1fr-Rest
-  (`grid-template-areas: ctl/dice/comment/roll/actions/undo/timer/.`). Die **Joker-Auswahl**
-  klappt wie gehabt unter den Würfeln auf; wird es eng, scrollt **nur die Würfel-Zone**
-  intern (`.dice-tray { overflow-y: auto; max-height: 46dvh }`), der Rest bleibt stehen
-  (Joker-Würfel klein, 22 px, damit alle 5 Farben/Zahlen in EINE Reihe passen). Bonus/
-  Spalten/Joker sind im KI-Modus **nicht anklickbar** – die Klick-Handler
-  (`onColumnClick`/`onColorClick`/`onJokerClick`) werden nur im PvP-Pfad (`redrawRelaxed`)
-  verdrahtet, der normale KI-Zug (`redraw`) übergibt sie nicht; gewertet wird automatisch.
-  Der **Block-Kopf** (Name · Punkte · „am Zug") bleibt im KI-Modus erhalten (mehrere
-  Blöcke unterscheidbar). **PvP/Notizblock** hat
+  (`grid-template-areas: ctl/dice/comment/roll/actions/undo/timer/.`). **Joker ohne Extra-
+  Auswahl:** Wählt der Mensch einen Joker-Würfel, erscheint KEIN Farb-/Zahl-Picker mehr –
+  Farbe und Anzahl ergeben sich aus den danach angekreuzten Feldern (Farbe = Farbe des
+  ersten Feldes, Anzahl = Zahl der Felder). Technisch fasst `currentPlacements` in
+  `controls.js` bei einem Joker alle Farben bzw. Längen 1–5 zusammen; `effColor`/`effCount`
+  leiten den Wert aus `state.selected` ab, `canConfirm` prüft, ob die Auswahl GENAU einer
+  legalen Platzierung entspricht. Spart die platzraubende zweite Auswahl. Wird die Würfel-/
+  Joker-Zone eng, scrollt **nur sie** intern (`.dice-tray { overflow-y: auto; max-height:
+  46dvh }`), der Rest bleibt stehen. Bonus/Spalten/Joker sind im KI-Modus **nicht
+  anklickbar** – die Klick-Handler (`onColumnClick`/`onColorClick`/`onJokerClick`) werden
+  nur im PvP-Pfad (`redrawRelaxed`) verdrahtet, der normale KI-Zug (`redraw`) übergibt sie
+  nicht; gewertet wird automatisch. **Block kompakter (wie PvP):** der **Block-Kopf**
+  (`.pb-head`) ist im Querformat in BEIDEN Modi ausgeblendet; „am Zug" entfällt ganz –
+  **wer dran ist, zeigt die Rahmenfarbe** (`.player-board.active` = orange, inaktiv =
+  gelb `#ffd23f`). Die **Punkte** stehen wie im PvP neben dem Joker über dem Block (nur die
+  TOTAL-Zeile aus `.totals`), im KI-Modus **darunter der Spielername** (`.sheet-name`, von
+  `renderBoards` via `playerName` ins Sheet durchgereicht; im PvP nicht gesetzt). So bleibt
+  der Block niedriger und die unteren Spaltensummen sind sichtbar. **PvP/Notizblock** hat
   einen **eigenen Spalten-Aufbau** (`body.mode-notepad #game-screen`): die Referenz-Würfel
   stehen GANZ OBEN direkt unter „Spiel beenden" und sind in natürlicher Größe **immer
   komplett sichtbar** (`align-self: start; overflow: visible`, kein interner Scroll), der
   dehnbare Rest (1fr) fällt ans untere Spaltenende.
   **Scrollen:** Im **KI-Modus** ist der aktive Block (Spieler 1) sofort sichtbar, weitere
   Spieler-Blöcke bleiben per Scrollen im Block-Bereich erreichbar
-  (`.board-container { overflow-y: auto }`); die Punkte stehen pro Block im Block-Kopf
-  (`.pb-head`). Im **PvP/Notizblock** gibt es nur EINEN Block – er scrollt **nie**
+  (`.board-container { overflow-y: auto }`); die Punkte + der Name stehen pro Block neben
+  dem Joker über dem Raster (`.totals .total-line` + `.sheet-name`). Im **PvP/Notizblock**
+  gibt es nur EINEN Block – er scrollt **nie**
   (`body.mode-notepad .board-container { overflow: visible }`). **Block größer:** der
   Block-Kopf (`.pb-head`) entfällt hier ganz; die **Punkte** stehen NEBEN dem Joker über
   dem Block (nur die TOTAL-Zeile aus `.totals` wird im PvP wieder eingeblendet) – über dem

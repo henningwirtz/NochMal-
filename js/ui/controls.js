@@ -6,6 +6,7 @@
 
 import { COLOR_ORDER, COLOR_HEX, COLOR_LABEL, JOKER, GRID_ROWS, GRID_COLS } from '../core/constants.js';
 import { legalPlacements, isRelaxedPlacement } from '../core/rules.js';
+import { GRID } from '../data/board.js';
 
 const key = (r, c) => `${r},${c}`;
 const sameSet = (cells, set) => cells.length === set.size && cells.every(([r, c]) => set.has(key(r, c)));
@@ -24,30 +25,46 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
     const state = {
       colorId: null,
       numberId: null,
-      jokerColor: null,
-      jokerCount: null,
       selected: [], // [[r,c],...]
     };
 
     const colorDieById = (id) => game.dice.colorDice.find((d) => d.id === id);
     const numberDieById = (id) => game.dice.numberDice.find((d) => d.id === id);
 
+    // Bei einem Joker gibt es KEINE Extra-Auswahl mehr: Farbe und Anzahl ergeben sich
+    // direkt aus den angekreuzten Feldern (Farbe = Farbe des ersten Feldes,
+    // Anzahl = Zahl der gewaehlten Felder).
     function effColor() {
       if (!state.colorId) return null;
       const die = colorDieById(state.colorId);
-      return die.face === JOKER ? state.jokerColor : die.face;
+      if (die.face !== JOKER) return die.face;
+      if (state.selected.length === 0) return null;
+      const [r, c] = state.selected[0];
+      return GRID[r][c];
     }
     function effCount() {
       if (!state.numberId) return null;
       const die = numberDieById(state.numberId);
-      return die.face === JOKER ? state.jokerCount : die.face;
+      if (die.face !== JOKER) return die.face;
+      return state.selected.length || null;
     }
 
+    // Alle legalen Platzierungen fuer die aktuelle Wuerfelwahl. Bei einem Joker werden
+    // alle moeglichen Farben bzw. Laengen (1..5) zusammengefasst - welche es konkret
+    // wird, entscheidet sich erst durch die tatsaechlich angekreuzten Felder.
     function currentPlacements() {
-      const color = effColor();
-      const count = effCount();
-      if (!color || !count) return [];
-      return legalPlacements(sheet, color, count);
+      const colorDie = state.colorId ? colorDieById(state.colorId) : null;
+      const numberDie = state.numberId ? numberDieById(state.numberId) : null;
+      if (!colorDie || !numberDie) return [];
+      const colors = colorDie.face === JOKER ? COLOR_ORDER : [colorDie.face];
+      const counts = numberDie.face === JOKER ? [1, 2, 3, 4, 5] : [numberDie.face];
+      const all = [];
+      for (const color of colors) {
+        for (const count of counts) {
+          for (const p of legalPlacements(sheet, color, count)) all.push(p);
+        }
+      }
+      return all;
     }
 
     function consistentPlacements(placements) {
@@ -123,9 +140,7 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
         return;
       }
 
-      const color = effColor();
-      const count = effCount();
-      if (!color || !count) {
+      if (!state.colorId || !state.numberId) {
         setHint('Bitte zuerst einen Farb- und einen Zahlenwürfel wählen.');
         return;
       }
@@ -134,7 +149,6 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       if (idx >= 0) {
         state.selected.splice(idx, 1);
       } else {
-        if (state.selected.length >= count) return;
         const tentative = [...state.selected, [r, c]];
         const ok = currentPlacements().some((p) => {
           const set = new Set(p.map(([rr, cc]) => key(rr, cc)));
@@ -246,14 +260,13 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       }
       dom.diceTray.append(colorGroup, numberGroup);
 
-      // Joker-Unterauswahl.
+      // Joker gewaehlt? Keine Extra-Auswahl mehr - nur ein kurzer Hinweis. Farbe und
+      // Anzahl ergeben sich aus den gleich angekreuzten Feldern.
       const colorDie = state.colorId ? colorDieById(state.colorId) : null;
-      if (colorDie && colorDie.face === JOKER) {
-        dom.diceTray.append(jokerColorPicker());
-      }
       const numberDie = state.numberId ? numberDieById(state.numberId) : null;
-      if (numberDie && numberDie.face === JOKER) {
-        dom.diceTray.append(jokerCountPicker());
+      const jokerChosen = (colorDie && colorDie.face === JOKER) || (numberDie && numberDie.face === JOKER);
+      if (jokerChosen && state.selected.length === 0) {
+        setHint(`Joker: Farbe und Anzahl ergeben sich aus den angekreuzten Feldern (${sheet.jokersRemaining()} Joker übrig).`);
       }
 
       // --- Board mit Highlights --------------------------------------------
@@ -278,9 +291,10 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
 
       // --- Aktionsleiste ----------------------------------------------------
       dom.actionBar.replaceChildren();
-      const color = effColor();
-      const count = effCount();
-      const canConfirm = color && count && state.selected.length === count && consistent.length > 0;
+      // Bestaetigen, sobald die Auswahl GENAU einer legalen Platzierung entspricht
+      // (gilt fuer feste Anzahl wie fuer Joker-Anzahl gleichermassen).
+      const canConfirm = state.selected.length > 0
+        && placements.some((p) => sameSet(state.selected, new Set(p.map(([rr, cc]) => key(rr, cc)))));
 
       const confirm = button('Bestätigen', () => {
         finish({
@@ -288,8 +302,8 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
           choice: {
             colorId: state.colorId,
             numberId: state.numberId,
-            color,
-            count,
+            color: effColor(),
+            count: effCount(),
             cells: state.selected,
           },
         });
@@ -314,7 +328,7 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       dom.actionBar.append(confirm, pass, undo);
 
       // Hinweis, wenn Kombination unmoeglich.
-      if (color && count && placements.length === 0) {
+      if (state.colorId && state.numberId && placements.length === 0) {
         setHint('Mit dieser Kombination ist keine gültige Platzierung möglich.');
       }
     }
@@ -348,7 +362,6 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       chip.addEventListener('click', () => {
         if (!usable) return;
         state.colorId = state.colorId === die.id ? null : die.id;
-        if (die.face !== JOKER) state.jokerColor = null;
         state.selected = [];
         setHint('');
         redraw();
@@ -366,51 +379,12 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       chip.addEventListener('click', () => {
         if (!usable) return;
         state.numberId = state.numberId === die.id ? null : die.id;
-        if (die.face !== JOKER) state.jokerCount = null;
         state.selected = [];
         setHint('');
         redraw();
       });
       return chip;
     }
-    function jokerColorPicker() {
-      const wrap = document.createElement('div');
-      wrap.className = 'joker-picker';
-      wrap.append(label(`Joker-Farbe (${sheet.jokersRemaining()} Joker übrig)`));
-      for (const color of COLOR_ORDER) {
-        const b = document.createElement('button');
-        b.className = 'die color-die';
-        b.style.background = COLOR_HEX[color];
-        b.title = COLOR_LABEL[color];
-        if (state.jokerColor === color) b.classList.add('selected');
-        b.addEventListener('click', () => {
-          state.jokerColor = color;
-          state.selected = [];
-          redraw();
-        });
-        wrap.append(b);
-      }
-      return wrap;
-    }
-    function jokerCountPicker() {
-      const wrap = document.createElement('div');
-      wrap.className = 'joker-picker';
-      wrap.append(label('Joker-Zahl'));
-      for (let n = 1; n <= 5; n++) {
-        const b = document.createElement('button');
-        b.className = 'die number-die';
-        b.textContent = n;
-        if (state.jokerCount === n) b.classList.add('selected');
-        b.addEventListener('click', () => {
-          state.jokerCount = n;
-          state.selected = [];
-          redraw();
-        });
-        wrap.append(b);
-      }
-      return wrap;
-    }
-
     redraw();
     startTimer();
   });
