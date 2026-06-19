@@ -103,7 +103,11 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   `styles.css` (`touch-action: manipulation`; ab iPhone-Breite ≤430 px passt der
   15-spaltige Block per `--cell: clamp(…, calc((100vw − 80px)/15), 27px)` komplett
   ohne Horizontal-Scroll, Safe-Area-Insets via `env(safe-area-inset-*)` für Notch/
-  Dynamic Island/Home-Indikator). **Nur Querformat:** Auf Touch-Geräten
+  Dynamic Island/Home-Indikator). Damit unter dem Inhalt (untere Safe-Area /
+  Home-Indikator) **kein weißer Balken** durchscheint, hat auch das `html`-Element den
+  dunklen Hintergrund (`html { background: var(--bg) }`, im Hell-Theme via
+  `html:has(body.light)`), und `body`/`html` füllen die volle Höhe (`min-height`).
+  **Nur Querformat:** Auf Touch-Geräten
   (`@media (orientation: portrait) and (pointer: coarse)`) verdeckt im Hochformat ein
   Overlay (`#rotate-prompt`) das ganze UI und fordert zum Drehen auf (am Desktop mit
   Maus, `pointer: fine`, greift das nie). Die installierte PWA startet zudem im
@@ -117,7 +121,10 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   entfällt.
   Spiel-Querformat (`@media (orientation: landscape) and (pointer: coarse)` – greift nun
   auch auf Tablets, nicht mehr nur `max-height: 600px`):
-  Grid mit Block links + schmaler Steuerspalte rechts; Steuerspalte von oben =
+  Grid mit Block links + schmaler Steuerspalte rechts; **alles gehört zu EINER Fläche** –
+  nichts schwebt mehr über dem Block. Steuerspalte von oben = **„Spiel beenden"**
+  (grid-area `ctl`, ganz oben in der Spalte; die kleinen Icons Theme/Ton sitzen fix
+  direkt darüber am Spaltenkopf, daher der `margin-top: 40px` am Knopf),
   KI-Aktionen/Kommentar (prominent), Würfeln-Button, Würfel + Joker-Auswahl
   (dehnbare, bei Bedarf scrollbare 1fr-Zone – Joker-Würfel sind hier klein (22 px),
   damit alle 5 Farben/Zahlen in EINE Reihe passen und Farb- + Zahl-Joker zusammen
@@ -125,7 +132,13 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   überschneidet sich auch bei BEIDEN Joker-Auswahlen nichts mit „Bestätigen"),
   Aktionen, „↩ Zug zurück", Zug-Timer.
   Die Aktionen sitzen fix UNTER der Würfel/Joker-Zone und können die Joker-Auswahl so
-  nie verdecken. „Spiel beenden" sitzt fix oben rechts neben Theme/Ton.
+  nie verdecken.
+  **Scrollen:** Im **KI-Modus** ist der aktive Block (Spieler 1) sofort sichtbar, weitere
+  Spieler-Blöcke bleiben per Scrollen im Block-Bereich erreichbar
+  (`.board-container { overflow-y: auto }`). Im **PvP/Notizblock** gibt es nur EINEN Block –
+  er scrollt **nie** (`body.mode-notepad .board-container { overflow: visible }`); die
+  Zellengröße ist dort bewusst konservativer berechnet (`--cell` mit `(100dvh − 150px)/9`),
+  damit Block + Bonus/Joker/Punkte garantiert auf eine Bildschirmhöhe passen.
   In jedem Block stehen Farb-Bonus + Joker per `column-reverse` ÜBER dem Raster;
   Sterne/Kreuze sind nur hier ~50 % größer (im Hochformat unverändert).
 
@@ -188,7 +201,8 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   das Wertungspanel (`.side-panel`) ebenfalls als kompakte Reihe unter dem Raster (Farb-
   Bonus + Joker + Punkte nebeneinander), damit jeder Block weniger Höhe braucht.
 - „Spiel beenden" (`#end-game-btn` im Spiel-Header): verwirft das laufende Spiel und
-  geht zurück ins Menü. `runGame` setzt dazu `dom.abortGame`; weil der Ablauf
+  geht zurück ins Menü. Im Querformat (Touch) sitzt der Knopf via `grid-area: ctl` oben
+  in der rechten Steuerspalte (nicht mehr fixiert/schwebend). `runGame` setzt dazu `dom.abortGame`; weil der Ablauf
   event-gesteuert ist (keine durchlaufende Schleife), bricht es nur einen evtl. gerade
   laufenden Mensch-Zug ab (`currentControl.cancel`, liefert `{ action:'abort' }`). Danach
   geht `main.js` zurück ins Menü (kein Eintrag in der Bestenliste).
