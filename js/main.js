@@ -8,6 +8,7 @@ import { runGame } from './ui/flow.js';
 import { validateBoard } from './data/board.js';
 import { getScores, clearScores, removeScoreAt, loadSettings, saveSettings, loadPrefs, savePrefs, SCORES_KEY } from './ui/storage.js';
 import { setMuted } from './ui/sound.js';
+import { escapeHtml } from './ui/util.js';
 
 // Spielplan beim Laden validieren (wirft bei Inkonsistenzen).
 validateBoard();
@@ -23,7 +24,9 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 const $ = (id) => document.getElementById(id);
 
 // Versionsanzeige - hilft zu erkennen, ob die aktuelle (ungecachte) Version laeuft.
-const VERSION = '2.1 · PvP-Würfeln';
+// Quelle ist version.js (window.APP_VERSION), damit die Version nur an EINER
+// Stelle gepflegt werden muss (auch der Service-Worker-Cache leitet sich daraus ab).
+const VERSION = (typeof window !== 'undefined' && window.APP_VERSION) || 'dev';
 const buildBadge = $('build-badge');
 if (buildBadge) buildBadge.textContent = `Version ${VERSION}`;
 
@@ -199,9 +202,6 @@ function renderLeaderboard() {
     tools.append(clearAll);
     box.append(tools);
   }
-}
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 $('edit-scores').addEventListener('click', () => { editScores = !editScores; renderLeaderboard(); });
 renderLeaderboard();

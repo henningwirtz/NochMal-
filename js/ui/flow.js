@@ -13,6 +13,7 @@
 import { renderSheet } from './boardView.js';
 import { humanTurn } from './controls.js';
 import { recordResults } from './storage.js';
+import { escapeHtml } from './util.js';
 import { playRoll, playMark, playEnd } from './sound.js';
 import { chooseMove } from '../core/ai.js';
 import {
@@ -392,7 +393,7 @@ function renderBoards(dom, game, opts = {}) {
     head.className = 'pb-head';
     const score = p.sheet.computeScore();
     head.innerHTML =
-      `<span class="pb-name">${p.name}${p.isHuman ? '' : ' (KI)'}</span>` +
+      `<span class="pb-name">${escapeHtml(p.name)}${p.isHuman ? '' : ' (KI)'}</span>` +
       `<span class="pb-score">${score.total} P.</span>` +
       (p.id === chooserIdx ? '<span class="pb-turn">am Zug</span>' : '');
     card.appendChild(head);
@@ -489,9 +490,9 @@ function renderScoreboard(dom, game) {
     const row = document.createElement('div');
     row.className = 'score-row';
     if (p.id === game.activeIndex) row.classList.add('active');
-    const colors = Object.keys(p.sheet.colorAward).length;
+    const colors = p.sheet.completedColorCount();
     row.innerHTML = `
-      <span class="sr-name">${p.name}${p.isHuman ? '' : ' (KI)'}</span>
+      <span class="sr-name">${escapeHtml(p.name)}${p.isHuman ? '' : ' (KI)'}</span>
       <span class="sr-total">${s.total} P.</span>
       <span class="sr-meta">${colors} Farbe(n) · ${s.jokersRemaining} Joker</span>
     `;
@@ -610,7 +611,7 @@ function showEnd(dom, game, solo = false) {
     const tr = document.createElement('tr');
     if (r.isWinner) tr.classList.add('winner');
     tr.innerHTML = `
-      <td>${r.player.name}${r.player.isHuman ? '' : ' (KI)'}${r.isWinner ? ' 🏆' : ''}</td>
+      <td>${escapeHtml(r.player.name)}${r.player.isHuman ? '' : ' (KI)'}${r.isWinner ? ' 🏆' : ''}</td>
       <td>${r.bonus}</td>
       <td>${r.columns}</td>
       <td>+${r.jokerBonus}</td>

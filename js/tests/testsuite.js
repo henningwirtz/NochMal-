@@ -5,10 +5,11 @@
 // ============================================================================
 
 import { validateBoard, GRID, COLOR_COUNTS, STARS } from '../data/board.js';
-import { COLORS, COLOR_ORDER, COLUMN_TOP, COLUMN_BOTTOM, START_COL, GRID_ROWS, GRID_COLS } from '../core/constants.js';
+import { COLORS, COLOR_ORDER, COLUMN_TOP, COLUMN_BOTTOM, START_COL, GRID_ROWS, GRID_COLS, JOKER, JOKER_BOXES } from '../core/constants.js';
 import { Sheet } from '../core/sheet.js';
-import { legalPlacements, isValidPlacement } from '../core/rules.js';
+import { legalPlacements, isValidPlacement, isRelaxedPlacement } from '../core/rules.js';
 import { Game } from '../core/game.js';
+import { chooseMove } from '../core/ai.js';
 
 const key = (r, c) => `${r},${c}`;
 const toKeySet = (placement) => new Set(placement.map(([r, c]) => key(r, c)));
@@ -41,6 +42,23 @@ export function runTests() {
   };
   const assert = (cond, msg) => { if (!cond) throw new Error(msg || 'Assertion fehlgeschlagen'); };
   const eq = (a, b, msg) => assert(a === b, `${msg || ''} (erwartet ${b}, war ${a})`);
+  const assertThrows = (fn, msg) => {
+    let threw = false;
+    try { fn(); } catch { threw = true; }
+    assert(threw, msg || 'Erwarteter Fehler ist ausgeblieben');
+  };
+
+  // Bringt ein frisch erstelltes Game in den Zustand "Spieler 0 ist am Zug" mit
+  // einem fest vorgegebenen Wurf - unabhaengig vom Zufall, fuer deterministische Tests.
+  function stageTurn(game, dice) {
+    game.dice = dice;
+    game.rollCount = 1;       // <= FREE_ROLLS: alle duerfen aus allen Wuerfeln waehlen
+    game.removedColorId = null;
+    game.removedNumberId = null;
+    game.order = [0];
+    game.pointer = 0;
+    game.activeIndex = 0;
+  }
 
   // 1) Spielplan ist strukturell gueltig.
   test('Spielplan-Validierung', () => {
@@ -194,6 +212,73 @@ export function runTests() {
     eq(sheet.colorAward[COLORS.GELB], 3, 'reduzierter Farb-Bonus');
     game.toggleColorStrikeByOther(0, COLORS.GELB);
     eq(sheet.colorAward[COLORS.GELB], 5, 'voller Farb-Bonus wieder hergestellt');
+  });
+
+  // 13) Joker-Auswahl: Farb- UND Zahl-Joker setzen 2 "!"-Felder ein und kreuzen an.
+  test('Joker: Farb- und Zahl-Joker verbrauchen 2 Felder', () => {
+    const game = new Game([{ name: 'A', isHuman: true }]);
+    const startColor = GRID[0][START_COL];
+    stageTurn(game, {
+      colorDice: [{ id: 'c0', face: JOKER }],
+      numberDice: [{ id: 'n0', face: JOKER }],
+    });
+    // Joker-Farbe = Startfarbe, Joker-Zahl = 1, Feld in Startspalte H.
+    game.submitChoice(0, {
+      colorId: 'c0', numberId: 'n0', color: startColor, count: 1, cells: [[0, START_COL]],
+    });
+    eq(game.players[0].sheet.jokersUsed, 2, 'zwei Joker verbraucht');
+    assert(game.players[0].sheet.isMarked(0, START_COL), 'Feld angekreuzt');
+  });
+
+  // 14) Joker-Auswahl ohne genug "!"-Felder wirft (und kreuzt nichts an).
+  test('Joker: zu wenige !-Felder werfen Fehler', () => {
+    const game = new Game([{ name: 'A', isHuman: true }]);
+    const startColor = GRID[0][START_COL];
+    game.players[0].sheet.useJokers(JOKER_BOXES); // 0 Joker uebrig
+    stageTurn(game, {
+      colorDice: [{ id: 'c0', face: JOKER }],
+      numberDice: [{ id: 'n0', face: JOKER }],
+    });
+    assertThrows(() => game.submitChoice(0, {
+      colorId: 'c0', numberId: 'n0', color: startColor, count: 1, cells: [[0, START_COL]],
+    }), 'ohne freie Joker muss es einen Fehler geben');
+    assert(!game.players[0].sheet.isMarked(0, START_COL), 'nichts angekreuzt');
+  });
+
+  // 15) Notizblock-Regel (isRelaxedPlacement): Grundregeln unabhaengig von den Wuerfeln.
+  test('Notizblock: nur eine Farbe, verankert, max. 5', () => {
+    const sheet = new Sheet();
+    // Einzelnes Startspaltenfeld ist gueltig.
+    assert(isRelaxedPlacement(sheet, [[0, START_COL]]), 'Startfeld gueltig');
+    // Ein nicht verankertes Feld (leeres Blatt, ausserhalb Startspalte) ist ungueltig.
+    assert(!isRelaxedPlacement(sheet, [[0, 0]]), 'unverankert ungueltig');
+    // Zwei waagerecht benachbarte Startspalten-Nachbarfelder: nur gueltig, wenn
+    // sie dieselbe Farbe haben (eine Farbe pro Zug) - robust gegen den Spielplan.
+    const a = [0, START_COL], b = [0, START_COL + 1];
+    const sameColor = GRID[a[0]][a[1]] === GRID[b[0]][b[1]];
+    eq(isRelaxedPlacement(sheet, [a, b]), sameColor, 'Zwei-Farben-Regel');
+    // Mehr als 5 Felder (Startspalte H hat 7 Zeilen) ist nie erlaubt.
+    const sixInStartCol = [0, 1, 2, 3, 4, 5].map((r) => [r, START_COL]);
+    assert(!isRelaxedPlacement(sheet, sixInStartCol), 'mehr als 5 ungueltig');
+  });
+
+  // 16) KI-Verhalten (robust, ohne konkrete Zug-/Punkterwartung): findet bei
+  // moeglichem Zug einen GUELTIGEN Zug und passt nur, wenn nichts geht.
+  test('KI: waehlt gueltigen Zug, passt nur ohne Option', () => {
+    const sheet = new Sheet();
+    const startColor = GRID[0][START_COL];
+    const pool = {
+      colorDice: [{ id: 'c0', face: startColor }],
+      numberDice: [{ id: 'n0', face: 1 }],
+    };
+    const move = chooseMove(sheet, pool, 'schwer');
+    assert(move !== null, 'es gibt einen moeglichen Zug');
+    assert(isValidPlacement(sheet, move.color, move.count, move.cells), 'KI-Zug ist regelkonform');
+
+    // Volles Blatt -> kein Zug mehr moeglich -> passen (null).
+    const full = new Sheet();
+    for (let r = 0; r < GRID_ROWS; r++) for (let c = 0; c < GRID_COLS; c++) full.marks[r][c] = true;
+    eq(chooseMove(full, pool, 'schwer'), null, 'ohne Option passt die KI');
   });
 
   return results;

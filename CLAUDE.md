@@ -29,9 +29,13 @@ Code (keine komplizierten Konstrukte).
 
 Start-Anleitung siehe `README`. Kurz: ES-Module brauchen einen HTTP-Server (kein
 `file://`) – `npm start` bzw. die `Spiel starten`-Skripte (nutzen `serve.py` mit
-`Cache-Control: no-store`). Nach Änderungen die `VERSION` in `main.js` hochsetzen –
-ein **kurzer, sprechender Versionsname** (z. B. `'2.0 · Querformat'`), der im Setup-Kopf
-als „Version …" erscheint (`#build-badge`).
+`Cache-Control: no-store`). Nach Änderungen die Version in **`version.js`**
+(`self.APP_VERSION`) hochsetzen – ein **kurzer, sprechender Versionsname**
+(z. B. `'2.0 · Querformat'`). Das ist die EINZIGE Versionsquelle: `index.html` lädt
+`version.js` als klassisches Script (setzt `window.APP_VERSION`, `main.js` zeigt es im
+Setup-Kopf als „Version …", `#build-badge`), und `sw.js` leitet den Service-Worker-
+Cache-Namen per `importScripts('version.js')` daraus ab – der Offline-Cache invalidiert
+also automatisch beim Hochzählen (keine separate `CACHE`-Pflege mehr).
 
 ## Tests
 
@@ -85,13 +89,16 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   `storage.js` (localStorage: Bestenliste `recordResults`/`getScores`/`removeScoreAt`/
   `clearScores`, Setup-Einstellungen `loadSettings`/`saveSettings`, globale Präferenzen
   `loadPrefs`/`savePrefs`), `sound.js` (WebAudio-Effekte: `playRoll`/`playMark`/
-  `playEnd`, `setMuted`/`isMuted` – keine externen Audiodateien).
+  `playEnd`, `setMuted`/`isMuted` – keine externen Audiodateien),
+  `util.js` (geteilte Mini-Helfer, aktuell `escapeHtml` – Spielernamen werden in
+  `flow.js`/`main.js` damit maskiert, bevor sie per `innerHTML` gesetzt werden).
 - `js/main.js` – Setup-Bildschirm & Bootstrap; `backToSetup()` für „Neues Spiel";
   rendert die Bestenliste, stellt zuletzt genutzte Einstellungen wieder her, steuert
   Hell/Dunkel-Theme + Ton (oben rechts) und registriert den Service Worker.
   `index.html`, `css/styles.css`.
 - PWA: `manifest.json` (Metadaten/Icons), `sw.js` (Service Worker, **Network-first**:
-  online frisch, offline aus Cache; `CACHE`-Version bei Releases hochzählen),
+  online frisch, offline aus Cache; `CACHE`-Name wird aus `version.js`
+  (`self.APP_VERSION`) abgeleitet, also nur dort die Version hochzählen),
   `icons/` (192/512/maskable/apple). Touch/Responsive über Media Queries in
   `styles.css` (`touch-action: manipulation`; ab iPhone-Breite ≤430 px passt der
   15-spaltige Block per `--cell: clamp(…, calc((100vw − 80px)/15), 27px)` komplett

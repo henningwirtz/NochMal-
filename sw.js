@@ -5,11 +5,17 @@
 // zurück. Beim Installieren wird die App-Shell vorab gecacht (Offline-Start).
 // ============================================================================
 
-const CACHE = 'nochmal-v25';
+// Cache-Name aus der EINEN Versionsquelle (version.js) ableiten. So invalidiert
+// der Offline-Cache automatisch, sobald die Version hochgezaehlt wird - man muss
+// die Cache-Version nicht mehr separat pflegen.
+importScripts('version.js');
+const CACHE = 'nochmal-' +
+  String(self.APP_VERSION || 'dev').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const ASSETS = [
   './',
   'index.html',
   'manifest.json',
+  'version.js',
   'css/styles.css',
   'js/main.js',
   'js/core/constants.js',
@@ -24,6 +30,7 @@ const ASSETS = [
   'js/ui/flow.js',
   'js/ui/storage.js',
   'js/ui/sound.js',
+  'js/ui/util.js',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/maskable-512.png',

@@ -102,6 +102,17 @@ export function chooseMove(sheet, pool, difficulty = 'mittel') {
   let best = null;
   let bestScore = 0.0001; // nur echte (positive) Zuege spielen
 
+  // Die gueltigen Platzierungen haengen nur von (Farbe, Anzahl) und dem - waehrend
+  // der Bewertung unveraenderten - Blatt ab. Bei zwei gleichfarbigen Wuerfeln oder
+  // Jokern faellt dieselbe (teure) Aufzaehlung mehrfach an -> einmal merken.
+  const placementCache = new Map(); // "color,count" -> Platzierungen
+  const placementsFor = (color, count) => {
+    const k = `${color},${count}`;
+    let p = placementCache.get(k);
+    if (!p) { p = legalPlacements(sheet, color, count); placementCache.set(k, p); }
+    return p;
+  };
+
   for (const cDie of pool.colorDice) {
     for (const nDie of pool.numberDice) {
       for (const co of colorOptions(cDie.face, sheet.jokersRemaining())) {
@@ -109,7 +120,7 @@ export function chooseMove(sheet, pool, difficulty = 'mittel') {
           const jokersUsed = co.jokers + no.jokers;
           if (jokersUsed > sheet.jokersRemaining()) continue;
 
-          const placements = legalPlacements(sheet, co.color, no.count);
+          const placements = placementsFor(co.color, no.count);
           for (const cells of placements) {
             let s = evaluatePlacement(sheet, cells, co.color, jokersUsed, cfg);
             if (cfg.jitter) s += Math.random() * cfg.jitter;
