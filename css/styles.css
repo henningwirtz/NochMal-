@@ -522,9 +522,11 @@ body.mode-notepad .totals { margin-top: 0; }
      Board-Spalte passt - auch wenn die Steuerspalte auf ihre Mindestbreite schrumpft -
      und das Raster in die Höhe. 9 ≈ 7 Block-Reihen + Spaltenkopf + Spaltensumme. */
   :root {
-    /* Block bewusst ~5% kleiner als die maximal moegliche Zelle, damit unter dem
-       Raster mehr Platz fuer die Steuerspalte (v.a. Joker-Auswahl) bleibt. */
-    --cell: calc(0.95 * clamp(14px, min((100vw - 240px) / 15, (100dvh - 96px) / 9), 30px));
+    /* KI-/Solo-Modus uebernimmt das grosszuegige PvP-Mass: groessere Zellen. Die
+       Wuerfel sitzen jetzt OBEN (wie im PvP) und die Joker-Auswahl scrollt notfalls
+       intern in ihrer Zone - der Block braucht darum keine extra Hoehen-Reserve mehr.
+       Auf kurzen Handy-Querformaten bleibt die Hoehe ((100dvh-…)/9) der Begrenzer. */
+    --cell: clamp(15px, min((100vw - 210px) / 15, (100dvh - 112px) / 9), 42px);
   }
   /* PvP/Notizblock: über dem Raster steht nur noch die kompakte Bonus/Joker-Reihe
      (Punkte sind in die rechte Spalte gewandert, der Block-Kopf entfällt), und es darf
@@ -534,26 +536,29 @@ body.mode-notepad .totals { margin-top: 0; }
     --cell: clamp(16px, min((100vw - 200px) / 15, (100dvh - 116px) / 9), 42px);
   }
 
-  /* Reihenfolge der Steuerspalte (von oben):
-       1. KI-Aktionen (Kommentar) - prominent ganz oben (getauscht mit "Spiel beenden")
-       2. Würfeln-Button         - klar ÜBER den Würfeln, weg von der Joker-Auswahl
-       3. Würfel (2×3) + Joker-Auswahl  - dehnbare, bei Bedarf scrollbare Zone (1fr)
-       4. Aktionen (Bestätigen/Passen/…) - feste Zeile UNTEN, deckt die Joker-Auswahl
-          dadurch nie zu und ist immer erreichbar
-       5. Zug-Timer (falls aktiv)
+  /* Reihenfolge der Steuerspalte (von oben) - wie im PvP, nur um KI-Elemente ergänzt:
+       1. Würfel (oben, groß, wie PvP) - direkt unter "Spiel beenden"; die Joker-Auswahl
+          klappt darunter auf und scrollt notfalls NUR in dieser Zone (siehe .dice-tray)
+       2. KI-Kommentar (Text-Anzeige) - zeigt die Spielzug-Texte
+       3. Würfeln-Button
+       4. Aktionen (Bestätigen/Passen / "▶ KI laufen lassen")
+       5. Zug-zurück
+       6. Zug-Timer (falls aktiv)
+       7. freier Rest (1fr) - hält alles oben zusammen
      "Spiel beenden" wandert nach oben rechts neben Theme/Ton (siehe unten). */
   #game-screen:not(.hidden) {
     display: grid;
     grid-template-columns: 1fr minmax(138px, 176px); /* Block | schmale Steuerspalte (~8% schmaler) */
-    grid-template-rows: auto auto auto 1fr auto auto auto;
+    grid-template-rows: auto auto auto auto auto auto auto 1fr;
     grid-template-areas:
       "board ctl"
+      "board dice"
       "board comment"
       "board roll"
-      "board dice"
       "board actions"
       "board undo"
-      "board timer";
+      "board timer"
+      "board .";
     gap: 8px;
     height: 100dvh;
     align-items: start;
@@ -618,14 +623,18 @@ body.mode-notepad .totals { margin-top: 0; }
   /* align-self: stretch -> der Würfel-/Joker-Bereich füllt genau seine 1fr-Zeile und
      scrollt bei Bedarf INTERN (overflow-y), statt nach unten über die Aktionen
      (Bestätigen/Passen) zu laufen. So überdeckt nichts mehr die Würfel. */
-  .dice-tray  { grid-area: dice; align-self: stretch; margin: 0; flex-direction: column;
-                gap: 6px; overflow-y: auto; min-height: 0; }
+  /* KI-/Solo-Modus: Würfel sitzen jetzt OBEN (wie PvP), an den oberen Rand geheftet.
+     Wird es mit der aufklappenden Joker-Auswahl eng, scrollt NUR diese Zone intern
+     (overflow-y) bis zur gedeckelten Höhe - der Rest der Steuerspalte bleibt stehen. */
+  .dice-tray  { grid-area: dice; align-self: start; margin: 0; flex-direction: column;
+                gap: 6px; overflow-y: auto; min-height: 0; max-height: 46dvh; }
   /* PvP/Notizblock: die Würfel stehen ganz oben unter "Spiel beenden" und sind in
      ihrer natürlichen Größe IMMER komplett sichtbar (kein interner Scroll). */
-  body.mode-notepad .dice-tray { align-self: start; overflow: visible; }
-  .dice-group { display: grid; grid-template-columns: repeat(3, 34px); gap: 6px; justify-content: start; }
+  body.mode-notepad .dice-tray { align-self: start; overflow: visible; max-height: none; }
+  /* KI-/Solo-Würfel größer (übernimmt den großzügigeren PvP-Look). */
+  .dice-group { display: grid; grid-template-columns: repeat(3, 42px); gap: 6px; justify-content: start; }
   .dice-label { display: none; }
-  .die        { width: 34px; height: 34px; font-size: 1rem; }
+  .die        { width: 42px; height: 42px; font-size: 1.2rem; }
   /* Im engen Querformat die PvP-Vergrößerung zurücknehmen (Block hat hier Vorrang),
      dafür etwas größer als die normalen Würfel, da es nur einen Block gibt. */
   body.mode-notepad .dice-group { grid-template-columns: repeat(3, 52px); }

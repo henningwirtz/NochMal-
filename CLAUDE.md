@@ -136,11 +136,19 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   daneben statt als frei schwebendes `position: fixed`-Element nur ungefähr zu passen
   (`.game-header #top-controls { position: static; grid-area: ctl }`). Auf dem
   Startbildschirm/Desktop bleiben sie wie gehabt fixiert oben rechts.
-  Darunter: KI-Aktionen/Kommentar (prominent, nur KI), Würfeln-Button, Würfel +
-  Joker-Auswahl (im KI-Modus dehnbare 1fr-Zone, `align-self: stretch` → scrollt bei Bedarf
-  INTERN; Joker-Würfel klein (22 px), damit alle 5 Farben/Zahlen in EINE Reihe passen),
-  Aktionen, „↩ Zug zurück", Zug-Timer. Im KI-Modus sitzen die Aktionen fix UNTER der
-  Würfel/Joker-Zone und können die Joker-Auswahl so nie verdecken. **PvP/Notizblock** hat
+  Darunter folgt im **KI-/Solo-Modus** derselbe Spalten-Aufbau wie im PvP (nur um die
+  KI-Elemente ergänzt): GANZ OBEN die **Würfel** (groß, 42 px, `align-self: start` direkt
+  unter „Spiel beenden"), dann die **Text-Anzeige** (KI-Kommentar), dann Würfeln-Button,
+  Aktionen, „↩ Zug zurück", Zug-Timer, unten freier 1fr-Rest
+  (`grid-template-areas: ctl/dice/comment/roll/actions/undo/timer/.`). Die **Joker-Auswahl**
+  klappt wie gehabt unter den Würfeln auf; wird es eng, scrollt **nur die Würfel-Zone**
+  intern (`.dice-tray { overflow-y: auto; max-height: 46dvh }`), der Rest bleibt stehen
+  (Joker-Würfel klein, 22 px, damit alle 5 Farben/Zahlen in EINE Reihe passen). Bonus/
+  Spalten/Joker sind im KI-Modus **nicht anklickbar** – die Klick-Handler
+  (`onColumnClick`/`onColorClick`/`onJokerClick`) werden nur im PvP-Pfad (`redrawRelaxed`)
+  verdrahtet, der normale KI-Zug (`redraw`) übergibt sie nicht; gewertet wird automatisch.
+  Der **Block-Kopf** (Name · Punkte · „am Zug") bleibt im KI-Modus erhalten (mehrere
+  Blöcke unterscheidbar). **PvP/Notizblock** hat
   einen **eigenen Spalten-Aufbau** (`body.mode-notepad #game-screen`): die Referenz-Würfel
   stehen GANZ OBEN direkt unter „Spiel beenden" und sind in natürlicher Größe **immer
   komplett sichtbar** (`align-self: start; overflow: visible`, kein interner Scroll), der
