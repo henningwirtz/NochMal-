@@ -5,17 +5,26 @@ werden bei Bedarf separat geplant. Erledigte Punkte als `[x]` markieren bzw. nac
 unten/„Erledigt" verschieben.
 
 ## KI / Bots
-- **Bots mit Namen & Charakteren** – Bots heißen z.B. „Leopold"; Schwierigkeit bleibt
-  (`game.aiDifficulty`). Im Log/UI statt „denkt nach" charakterbezogene Sprüche/Aktionen
-  („Gucken wir erstmal, was Henning hat"). Langfristig: eigene Bots im Setup anlegbar.
-  → `flow.js` (aiTurn-Ausgabe), `main.js` (Setup/Namen), neue Sprüche-Daten z.B.
-  `js/data/bots.js`.
-- **Leopold-Bot** – eigener Spielstil (sabotiert/blockt Mitspieler), Fokus auf
-  lustige/dumme Sprüche; „normale" KI bleibt parallel bestehen. → `ai.js`
-  (Taktik-Variante), `js/data/bots.js` (Sprüche).
-- **Bot-Rückmeldung fixen** – wenn ein Bot nichts nimmt/nehmen kann, klare Meldung
-  statt Hängenbleiben auf „denkt nach". → `flow.js` (aiTurn).
-- **KI-Spielzüge optimieren** – bessere Heuristik in `chooseMove`. → `ai.js`.
+- [x] **Leopold-Bot (Stufe „schwer")** – die schwerste Stufe heißt im Menü
+  „Leopold – schwierig" (intern weiter `'schwer'`) und spielt deutlich stärker
+  (~73 % Siege gg. „mittel", ~92 % gg. „leicht" im Headless-Test). Neue Taktik-Terme
+  in `chooseMove`/`evaluatePlacement` (`ai.js`, nur Stufe `schwer`):
+  *keine „Waisen"* (Strafe je neu isoliertem Farbfeld, `countColorOrphans`),
+  *Außenspalten* (Fortschritt × Spaltenwert, quadratisch → Rand A/O = 5/3 zuerst),
+  *Defensive* (`denialBonus`: am eigenen Zug bevorzugt den **einzigen** Würfel einer
+  Farbe verbrauchen, die der stärkste Gegner braucht → passive Mitspieler bekommen
+  genau diese 2 Würfel nicht), *Endspiel-Timing* (führt er, drängt er aufs Ende
+  = 2. Farbe; liegt er hinten, meidet er den beendenden Zug). Gegner-Infos kommen über
+  `buildAiContext` in `flow.js` (`opponents`/`isActive`/`scoreDiff`/`leaderName`).
+  Frechen Sprüche-Pool (`LINES` in `ai.js`, situationsabhängig via `classifyMove`,
+  spricht den Führenden beim Namen an) im Kommentarfeld (`leopoldThinking`/
+  `leopoldComment`, gezeigt in `flow.js` `aiChoose`). „leicht"/„mittel" unverändert
+  (neue Gewichte dort 0). Tests/Sim laufen unverändert grün.
+- **Weitere Bot-Namen & Charaktere** – auch „leicht"/„mittel" eigene Namen/Sprüche
+  geben; langfristig eigene Bots im Setup anlegbar. → `ai.js`/`flow.js`, `main.js`
+  (Setup/Namen), ggf. `js/data/bots.js`.
+- **KI-Spielzüge weiter optimieren** – z.B. flacher Lookahead, Zahlenwürfel-Denial,
+  Spalten-Erstabschluss global priorisieren. → `ai.js`.
 
 ## Spielregeln / Varianten
 - [x] **Modus-Auswahl beim Start** – auf der Startseite (oben im Setup) zwei Modus-Karten

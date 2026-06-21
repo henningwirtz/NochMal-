@@ -15,7 +15,7 @@ import { humanTurn } from './controls.js';
 import { recordResults } from './storage.js';
 import { escapeHtml } from './util.js';
 import { playRoll, playMark, playEnd } from './sound.js';
-import { chooseMove } from '../core/ai.js';
+import { chooseMove, leopoldThinking, leopoldComment } from '../core/ai.js';
 import {
   COLOR_LABEL,
   COLOR_HEX,
@@ -299,21 +299,32 @@ export function runGame(game, dom) {
   // ankreuzen. Legt vorher einen Schnappschuss für die Zurück-Taste ab.
   async function aiChoose(idx, player) {
     const spd = game.aiSpeed || 1;
+    const leopold = game.aiDifficulty === 'schwer';
+    const ctx = buildAiContext(game, idx);
     pendingSnapshot = game.snapshot();
     renderBoards(dom, game, { chooserIdx: idx });
     renderDiceStatic(dom, game, idx);
     setStatus(dom, `${player.name} (KI) überlegt …`);
-    if (dom.commentary) dom.commentary.textContent = `${player.name} (KI) überlegt …`;
+    if (dom.commentary) {
+      dom.commentary.textContent = leopold
+        ? leopoldThinking(ctx)
+        : `${player.name} (KI) überlegt …`;
+    }
     await delay(700 * spd);
 
-    const move = chooseMove(player.sheet, game.availablePool(idx), game.aiDifficulty);
+    const move = chooseMove(player.sheet, game.availablePool(idx), game.aiDifficulty, ctx);
     if (!move) {
       game.submitPass(idx);
+      if (leopold && dom.commentary) dom.commentary.textContent = leopoldComment('pass', ctx.leaderName);
       announce(dom, `${player.name} (KI) passt.`);
       await delay(500 * spd);
       history.push(pendingSnapshot);
       renderScoreboard(dom, game);
       return;
+    }
+
+    if (leopold && dom.commentary) {
+      dom.commentary.textContent = leopoldComment(move.situation, ctx.leaderName);
     }
 
     setStatus(dom, `${player.name} (KI) kreuzt an: ${describeMove(move)}`);
@@ -366,6 +377,29 @@ export function runGame(game, dom) {
 // ---------------------------------------------------------------------------
 function setStatus(dom, text) {
   dom.statusBar.textContent = text;
+}
+
+// Kontext fuer die KI-Entscheidung (v.a. fuer Leopold): die Blaetter der Gegner,
+// ob die KI gerade aktiv ist (nur dann kann sie Gegnern Wuerfel wegnehmen), der
+// aktuelle Punkte-Vorsprung gegenueber dem staerksten Gegner und dessen Name.
+function buildAiContext(game, idx) {
+  const me = game.players[idx];
+  const opponents = [];
+  let leaderName = null;
+  let bestOpp = -Infinity;
+  game.players.forEach((p, i) => {
+    if (i === idx) return;
+    opponents.push(p.sheet);
+    const total = p.sheet.computeScore().total;
+    if (total > bestOpp) { bestOpp = total; leaderName = p.name; }
+  });
+  const myTotal = me.sheet.computeScore().total;
+  return {
+    opponents,
+    isActive: idx === game.activeIndex,
+    scoreDiff: opponents.length ? myTotal - bestOpp : 0,
+    leaderName: leaderName || 'ihr',
+  };
 }
 // Header-Chip: kompakter Punktestand des aktuell Waehlenden (kein "am Zug"-Text
 // mehr - wer dran ist, zeigt der hervorgehobene Block). Im PvP/Notizblock gibt es

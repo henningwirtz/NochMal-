@@ -62,8 +62,23 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   kreuzt im Notizblock-Modus frei gewählte, regelkonform erreichbare Felder ohne
   Würfel-Prüfung an),
   `ai.js` (Heuristik-KI,
-  `chooseMove(sheet, pool, difficulty)`; Stufen `leicht`/`mittel`/`schwer` über `CFG`,
-  die die strategische Gewichtung skalieren).
+  `chooseMove(sheet, pool, difficulty, ctx)`; Stufen `leicht`/`mittel`/`schwer` über `CFG`,
+  die die strategische Gewichtung skalieren. Die schwerste Stufe `schwer` heißt im Menü
+  **„Leopold – schwierig"** (nur Anzeigename, intern weiter `'schwer'`) und hat eigene
+  Taktik-Terme – **keine „Waisen"** (`countColorOrphans`: Strafe je neu isoliertem
+  Farbfeld, z.B. eine 6er-Gruppe nicht so anschneiden, dass Einzelfelder liegen bleiben),
+  **Außenspalten** (Fortschritt × Spaltenwert, quadratisch → wertvolle Ränder A/O zuerst),
+  **Defensive** (`denialBonus`, nur am eigenen/aktiven Zug: verbraucht bevorzugt den
+  **einzigen** Würfel einer Farbe, die der stärkste Gegner braucht – die passiven
+  Mitspieler bekommen genau die 2 vom Aktiven benutzten Würfel nicht) und
+  **Endspiel-Timing** (vorn → aufs Ende = 2. Farbe drängen, hinten → beendenden Zug meiden).
+  Diese Terme brauchen `ctx` = `{ opponents, isActive, scoreDiff, leaderName }`, das
+  `flow.js` per `buildAiContext` baut; ohne `ctx` (z.B. Sim/Tests) spielt die KI rein auf
+  das eigene Blatt, `leicht`/`mittel` sind unverändert (neue Gewichte dort 0). Leopold
+  kommentiert frech und situationsabhängig: `classifyMove` ordnet den gewählten Zug einer
+  Situation zu (`fastEnd`/`denial`/`outer`/`color`/`behind`/`ahead`/…), `leopoldThinking`/
+  `leopoldComment` ziehen daraus einen Spruch aus `LINES` (spricht den Führenden mit Namen
+  an) – `flow.js` zeigt ihn im Kommentarfeld (`#commentary`)).
 - `js/ui/` – Rendering & Ablauf: `boardView.js` (`renderSheet` = ein Blatt),
   `flow.js` (`runGame` = **event-gesteuerter Ablauf**: Mensch-Schritte (Würfeln, Zug)
   werden per Klick ausgelöst; `present()` ist die zentrale Weiche, die aus dem
