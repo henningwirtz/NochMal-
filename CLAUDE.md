@@ -65,20 +65,33 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   `chooseMove(sheet, pool, difficulty, ctx)`; Stufen `leicht`/`mittel`/`schwer` über `CFG`,
   die die strategische Gewichtung skalieren. Die schwerste Stufe `schwer` heißt im Menü
   **„Leopold – schwierig"** (nur Anzeigename, intern weiter `'schwer'`) und hat eigene
-  Taktik-Terme – **keine „Waisen"** (`countColorOrphans`: Strafe je neu isoliertem
-  Farbfeld, z.B. eine 6er-Gruppe nicht so anschneiden, dass Einzelfelder liegen bleiben),
-  **Außenspalten** (Fortschritt × Spaltenwert, quadratisch → wertvolle Ränder A/O zuerst),
-  **Defensive** (`denialBonus`, nur am eigenen/aktiven Zug: verbraucht bevorzugt den
-  **einzigen** Würfel einer Farbe, die der stärkste Gegner braucht – die passiven
-  Mitspieler bekommen genau die 2 vom Aktiven benutzten Würfel nicht) und
+  Taktik-Terme (Prioritäten: Abschlüsse > Sterne > Joker sparen > sauber füllen >
+  Außenspalten > Defensive > Endspiel-Timing). Im Detail:
+  **Joker sparen** (`jokerPenalty`, phasenabhängig: jeder bereits verbrauchte Joker macht
+  den nächsten teurer → insgesamt wenige; früh sind nur die ersten ~2 günstig, wenn sie
+  nach außen bauen; Mitte teuer = sparen/passen; ab ~70 % Füllung billig, damit Joker
+  Spalten schließen; die letzten 2 bis zum Endspiel reserviert – im Test: bei 50 %
+  Brett-Füllung noch ~4 von 8 Jokern übrig statt früher fast alle weg).
+  **Sauber füllen, keine Reste** (`strandBadness`, als Differenz vorher/nachher: Strafe je
+  liegengelassenem Feld einer **kleinen Gruppe ≤5**, Einzelfeld ohne freien gleichfarbigen
+  Nachbarn zählt schwerer; **Gruppen mit 6+ Feldern bleiben straffrei** – die kann man nie
+  in einem Zug füllen; `computeRegionSizes` liefert die Gruppengrößen je Farbe). Der
+  `frontier`-Mobilitätsbonus ist für Leopold aus (er belohnte Lücken).
+  **Außenspalten** (Fortschritt × Spaltenwert, quadratisch → wertvolle Ränder A/O zuerst,
+  früh verstärkt). **Defensive** (`denialBonus`, nur am eigenen/aktiven Zug: verbraucht
+  bevorzugt den **einzigen** Würfel einer Farbe, die der stärkste Gegner braucht – die
+  passiven Mitspieler bekommen genau die 2 vom Aktiven benutzten Würfel nicht).
   **Endspiel-Timing** (vorn → aufs Ende = 2. Farbe drängen, hinten → beendenden Zug meiden).
   Diese Terme brauchen `ctx` = `{ opponents, isActive, scoreDiff, leaderName }`, das
   `flow.js` per `buildAiContext` baut; ohne `ctx` (z.B. Sim/Tests) spielt die KI rein auf
-  das eigene Blatt, `leicht`/`mittel` sind unverändert (neue Gewichte dort 0). Leopold
-  kommentiert frech und situationsabhängig: `classifyMove` ordnet den gewählten Zug einer
-  Situation zu (`fastEnd`/`denial`/`outer`/`color`/`behind`/`ahead`/…), `leopoldThinking`/
-  `leopoldComment` ziehen daraus einen Spruch aus `LINES` (spricht den Führenden mit Namen
-  an) – `flow.js` zeigt ihn im Kommentarfeld (`#commentary`)).
+  das eigene Blatt, `leicht`/`mittel` sind unverändert (neue Gewichte dort 0, Joker-Strafe
+  flach). Headless-Bench: Leopold ~80 % Siege gg. „mittel". Leopold kommentiert frech und
+  abwechslungsreich: `classifyMove` ordnet den gewählten Zug einer Situation zu
+  (`fastEnd`/`denial`/`outer`/`color`/`behind`/`ahead`/`star`/`joker`/`big`/`lean`/`pass`),
+  `leopoldThinking`/`leopoldComment` ziehen daraus einen Spruch aus `LINES` (spricht den
+  Führenden mit Namen an); ~⅓ der Zeit kommt ein allgemeiner Spruch, und eine
+  `recentLines`-Sperre verhindert Wiederholungen (unter ~10 Sprüchen höchstens einer
+  doppelt) – `flow.js` zeigt ihn im Kommentarfeld (`#commentary`)).
 - `js/ui/` – Rendering & Ablauf: `boardView.js` (`renderSheet` = ein Blatt),
   `flow.js` (`runGame` = **event-gesteuerter Ablauf**: Mensch-Schritte (Würfeln, Zug)
   werden per Klick ausgelöst; `present()` ist die zentrale Weiche, die aus dem
