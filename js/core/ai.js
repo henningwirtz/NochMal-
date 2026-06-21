@@ -460,7 +460,7 @@ const LINES = {
     'Vertrau mir, ich bin quasi Experte.',
     'Locker aus dem Handgelenk.',
     'Wer braucht schon Glück, wenn er mich hat.',
-    'Wenn ich hier durch bin, gibt es erst mal einen Belohnungssteak.',
+    'Wenn ich hier durch bin, gibt es erst mal ein Belohnungssteak.',
   ],
 
   // --- Spott auf den MENSCHLICHEN Zug. {name} = Name des Menschen. ----------
