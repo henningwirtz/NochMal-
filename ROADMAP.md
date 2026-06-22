@@ -62,9 +62,17 @@ unten/„Erledigt" verschieben.
   **oder** alle Spalten zu (`allColumnsComplete`) → sofort nach „Bestätigen" Ende + Einfrieren
   (`sheet.js`-Helfer). → `boardView.js` (`onColumnClick`/`onColorClick`, `.clickable`/
   `.struck`), `flow.js`/`controls.js` (Handler durchreichen/verdrahten), `styles.css`.
-- **Neue Blöcke (auswählbar)** – mehrere Spielpläne (offizielle Varianten + eigene),
-  im Setup wählbar; Engine ist datengetrieben. → `board.js` (mehrere `RAW_GRID`/`STARS`),
-  `main.js` (Auswahl im Setup), `storage.js` (Auswahl merken).
+- [x] **Neue Blöcke (auswählbar)** – mehrere Spielpläne im Setup wählbar; Engine
+  datengetrieben. Registry `BOARDS` + `setActiveBoard(id)` in `board.js` (Live-Binding-
+  Exporte `GRID`/`STARS`/`COLOR_COUNTS`), Auswahl-Overlay `#block-modal` in `index.html`/
+  `main.js`, gemerkt via `saveSettings` (`boardId`). Aktuell: Standard, Pink (sauberes
+  Foto), Grün/Blau (grob aus unscharfem Bild, ggf. noch nicht 1:1 – per `raw`/`stars`
+  korrigierbar). *Offen:* Grün/Blau mit scharfen Einzelfotos exakt machen; weitere
+  (Encore-)Blöcke I–VI.
+- **Sternstrafe je Block** – optional je Block eine eigene Stern-Strafe (Vorlagen zeigen
+  −2 bzw. −3); aktuell global `STAR_PENALTY = 2` für alle Blöcke. Umsetzung: Strafe in den
+  `BOARDS`-Eintrag aufnehmen und in `computeScore`/`sheet.js` statt der Konstante nutzen.
+  → `board.js`, `constants.js`, `sheet.js`.
 - **Joker als 6** – ein Zahl-Joker-Element darf als Wert 6 eingesetzt werden.
   → `constants.js`/`rules.js`, ggf. `sheet.js`.
 - **Minuspunkte / Pass-Felder** – begrenzte Anzahl Pässe (z.B. 5); jedes Passen

@@ -63,10 +63,74 @@ const STANDARD_STARS = [
 // vorerst dieselbe Vorlage (gueltiges Brett), bis scharfe Einzelbilder der
 // weiteren Bloecke vorliegen - dann nur `raw`/`stars` des Eintrags ersetzen.
 // ----------------------------------------------------------------------------
+// --- Pink (aus dem sauberen Schmidt-Foto) ------------------------------------
+//          ABCDEFGHIJKLMNO
+const PINK_RAW = [
+  'nnooorbrbbbbbbr',
+  'roornnnyyynonoo',
+  'rbbnnnnyorrbboy',
+  'brrnoobbnnyyorr',
+  'boooorbbooorrrb',
+  'robrrrrnoorbbro',
+  'yyoooornyyynnoo',
+];
+const PINK_STARS = [
+  [0, 4], [0, 8],
+  [1, 6], [1, 13],
+  [2, 0], [2, 9],
+  [3, 0], [3, 5], [3, 13],
+  [4, 14],
+  [5, 1], [5, 13],
+  [6, 2], [6, 13],
+];
+
+// --- Grün (grobes Geruest aus dem unscharfen Sammelbild - zu korrigieren) -----
+//          ABCDEFGHIJKLMNO
+const GRUEN_RAW = [
+  'onnbbyrrbbynnor',
+  'yonnbbnyyobbnoo',
+  'nbboornyoorrbby',
+  'brrnnobboyyrorn',
+  'rooyrrbbnnoorbb',
+  'nbbryyrnorbbyoo',
+  'yyoobnrynnoorrn',
+];
+const GRUEN_STARS = [
+  [0, 1], [0, 9],
+  [1, 5],
+  [2, 3], [2, 12],
+  [3, 0], [3, 7],
+  [4, 4], [4, 13],
+  [5, 2], [5, 10],
+  [6, 1], [6, 8], [6, 14],
+];
+
+// --- Blau (grobes Geruest aus dem unscharfen Sammelbild - zu korrigieren) ------
+//          ABCDEFGHIJKLMNO
+const BLAU_RAW = [
+  'bnnoyyrrnbbbyoo',
+  'ynboornnyyobbrr',
+  'rrbboonyyooynnb',
+  'nbbrrnobboyyrro',
+  'ooynrrbbnnoorbb',
+  'rbbyyornorbbyon',
+  'yyoobbnrnnoorrn',
+];
+const BLAU_STARS = [
+  [0, 1], [0, 8],
+  [1, 5],
+  [2, 6], [2, 13],
+  [3, 0], [3, 12],
+  [4, 3],
+  [5, 1], [5, 9],
+  [6, 2], [6, 7], [6, 14],
+];
+
 export const BOARDS = [
   { id: 'standard', name: 'Standard', raw: STANDARD_RAW, stars: STANDARD_STARS },
-  { id: 'block2', name: 'Block 2 (Platzhalter)', raw: STANDARD_RAW, stars: STANDARD_STARS },
-  { id: 'block3', name: 'Block 3 (Platzhalter)', raw: STANDARD_RAW, stars: STANDARD_STARS },
+  { id: 'pink', name: 'Pink', raw: PINK_RAW, stars: PINK_STARS },
+  { id: 'gruen', name: 'Grün', raw: GRUEN_RAW, stars: GRUEN_STARS },
+  { id: 'blau', name: 'Blau', raw: BLAU_RAW, stars: BLAU_STARS },
 ];
 
 // ----------------------------------------------------------------------------
