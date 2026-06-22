@@ -5,7 +5,7 @@
 
 import { Game } from './core/game.js';
 import { runGame } from './ui/flow.js';
-import { validateBoard } from './data/board.js';
+import { validateBoard, BOARDS, setActiveBoard } from './data/board.js';
 import { getScores, clearScores, removeScoreAt, loadSettings, saveSettings, loadPrefs, savePrefs, SCORES_KEY } from './ui/storage.js';
 import { setMuted } from './ui/sound.js';
 import { escapeHtml } from './ui/util.js';
@@ -44,6 +44,9 @@ for (let i = 0; i < 6; i++) slots.push(defaultSlot(i));
 // Spielmodus: 'a' = Gegen die KI (ein Gerät), 'b' = Digitaler Notizblock (eigenes Handy).
 let currentMode = 'a';
 
+// Gewaehlter Spielblock (Brett). Default = erster Block der Registry.
+let currentBoardId = BOARDS[0].id;
+
 // Zuletzt verwendete Einstellungen wiederherstellen (Namen, Anzahl, KI, Timer).
 const saved = loadSettings();
 if (saved) {
@@ -61,6 +64,8 @@ if (saved) {
   if (saved.jokerSix) $('rule-joker-six').checked = true;
   if (saved.passPenalty) $('rule-pass-penalty').checked = true;
   if (saved.mode === 'b') currentMode = 'b';
+  // Block-Auswahl nur uebernehmen, wenn die id noch in der Registry existiert.
+  if (saved.boardId && BOARDS.some((b) => b.id === saved.boardId)) currentBoardId = saved.boardId;
 }
 
 // --- Hell/Dunkel-Theme und Ton (global, sofort gespeichert) ----------------
@@ -281,6 +286,41 @@ $('rules-modal').addEventListener('click', (e) => {
   if (e.target.id === 'rules-modal') $('rules-modal').classList.add('hidden');
 });
 
+// Blockauswahl: Overlay-Menü mit der Liste aller Blöcke (Optik wie die Regeln).
+const blockSelectBtn = $('block-select-btn');
+function updateBlockButton() {
+  const board = BOARDS.find((b) => b.id === currentBoardId) || BOARDS[0];
+  blockSelectBtn.textContent = `🧩 Blockauswahl: ${board.name}`;
+}
+function renderBlockOptions() {
+  const box = $('block-options');
+  box.replaceChildren();
+  BOARDS.forEach((board) => {
+    const opt = document.createElement('button');
+    opt.type = 'button';
+    opt.className = 'block-option';
+    opt.textContent = board.name;
+    opt.classList.toggle('active', board.id === currentBoardId);
+    opt.addEventListener('click', () => {
+      currentBoardId = board.id;
+      renderBlockOptions();
+      updateBlockButton();
+    });
+    box.append(opt);
+  });
+}
+updateBlockButton();
+blockSelectBtn.addEventListener('click', () => {
+  renderBlockOptions();
+  $('block-modal').classList.remove('hidden');
+});
+$('block-done-btn').addEventListener('click', () => {
+  $('block-modal').classList.add('hidden');
+});
+$('block-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'block-modal') $('block-modal').classList.add('hidden');
+});
+
 startBtn.addEventListener('click', () => {
   const notepad = currentMode === 'b';
   const aiDifficulty = $('ai-difficulty').value;
@@ -311,6 +351,9 @@ startBtn.addEventListener('click', () => {
     relaxed = false;
   }
 
+  // Gewähltes Brett aktiv setzen, BEVOR die Spielblätter erzeugt werden.
+  setActiveBoard(currentBoardId);
+
   // Einstellungen für das nächste Mal merken.
   saveSettings({
     mode: currentMode,
@@ -322,6 +365,7 @@ startBtn.addEventListener('click', () => {
     timerSeconds,
     jokerSix,
     passPenalty,
+    boardId: currentBoardId,
     slots: slots.map((s) => ({ name: s.name, isHuman: s.isHuman })),
   });
 

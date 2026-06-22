@@ -84,9 +84,22 @@ Im Browser zusätzlich: <http://localhost:8000/tests.html>.
 
 Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, nicht im Code.
 
-- `js/data/board.js` – 15×7-Farbraster (`RAW_GRID`) + Sternpositionen (`STARS`), 1:1 vom
-  Originalblock übertragen. `validateBoard()` prüft die Struktur beim Laden. Spielplan
-  ändern = nur diese Datei anpassen.
+- `js/data/board.js` – **mehrere auswählbare Spielblöcke** (Bretter), je 15×7-Farbraster +
+  Sternpositionen. Eine Registry `BOARDS = [{ id, name, raw, stars }, …]` hält alle Blöcke
+  (aktuell: `standard` = das echte Originalbrett, dazu Platzhalter, die vorerst dieselbe
+  Vorlage nutzen – bei echten Block-Bildern nur `raw`/`stars` des Eintrags ersetzen). Das
+  **aktive** Brett liefern die `export let`-Bindings `GRID`/`STARS`/`COLOR_COUNTS` und die
+  Funktion `hasStar`; `setActiveBoard(id)` rechnet sie aus dem gewählten Block neu. Weil
+  alle Verbraucher (`sheet`/`ai`/`rules`/`controls`/`boardView`) diese Werte erst zur
+  Laufzeit (in Funktionen) lesen, wirkt ein Brett-Wechsel über die ES-Module-Live-Bindings
+  sofort überall – kein Verbraucher muss angefasst werden. `main.js` ruft `setActiveBoard`
+  VOR `new Game(...)` (das Brett ist globaler Modulzustand, bleibt für die Partie konstant,
+  ist NICHT Teil von Snapshot/Undo). `validateBoard()` prüft beim Laden JEDEN Block der
+  Registry (7×15 Felder, 5 Farben, zusammenhängend, Sterne im Brett). Die Block-Auswahl
+  steckt in `main.js` (`currentBoardId`, gemerkt via `saveSettings/loadSettings` als
+  `boardId`) und im Startmenü-Overlay `#block-modal` (Knopf `#block-select-btn`, Optik wie
+  die Zusätzlichen Regeln; Liste `#block-options`, je Block eine `.block-option`). Spielplan
+  eines Blocks ändern = nur dessen Registry-Eintrag in dieser Datei anpassen.
 - `js/core/` – reine Logik, DOM-frei: `constants.js` (Farben, Würfel, Wertungstabellen),
   `dice.js`, `rules.js` (legale Platzierungen; `isRelaxedPlacement` für den Notizblock-
   Modus: unabhängig von den Würfeln, aber regelkonform – zusammenhängend, verankert,

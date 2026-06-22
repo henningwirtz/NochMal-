@@ -1,12 +1,16 @@
 // ============================================================================
 // data/board.js
 // ----------------------------------------------------------------------------
-// Der Standard-Spielplan von "NOCH MAL!": 15 Spalten (A-O) x 7 Zeilen = 105
-// farbige Kaestchen, plus Sternfelder und die Startspalte H.
+// Die Spielplaene ("Bloecke") von "NOCH MAL!": je 15 Spalten (A-O) x 7 Zeilen =
+// 105 farbige Kaestchen, plus Sternfelder und die Startspalte H.
 //
-// Das Farbraster und die Sternpositionen wurden 1:1 vom Originalblock
-// (Schmidt Spiele) uebertragen. Da die Engine vollstaendig datengetrieben ist,
-// genuegt zum Austausch des Spielplans eine Aenderung dieser Datei.
+// Die Engine ist vollstaendig datengetrieben: ein Brett steckt komplett in
+// Daten (RAW_GRID + STARS), nicht im Code. Es gibt eine Registry mehrerer
+// Bloecke (BOARDS); das gerade aktive Brett wird ueber setActiveBoard(id)
+// umgeschaltet. Die Exporte GRID/COLOR_COUNTS/STARS sind absichtlich `let`
+// (ES-Module-Live-Bindings): wird das aktive Brett gewechselt, sehen alle
+// Verbraucher (sheet/ai/rules/controls/boardView) sofort die neuen Werte, weil
+// sie diese erst zur Laufzeit (in Funktionen) lesen.
 //
 // Farbcodes im Raster:
 //   y = gelb, n = gruen, b = blau, r = rot (pink/magenta), o = orange
@@ -23,9 +27,12 @@ const CODE_TO_COLOR = {
   o: COLORS.ORANGE,
 };
 
+export const ROWS = 7;
+export const COLS = 15;
+
 // 7 Zeilen, jeweils 15 Spalten (A..O). Startspalte H = Index 7.
 //          ABCDEFGHIJKLMNO
-const RAW_GRID = [
+const STANDARD_RAW = [
   'nnnyyyynbbboyyy',
   'onynyyoorbboonn',
   'bnrnnnnrrryyonn',
@@ -36,7 +43,7 @@ const RAW_GRID = [
 ];
 
 // Sternpositionen [Zeile, Spalte] - vom Originalblock uebernommen (14 Sterne).
-export const STARS = [
+const STANDARD_STARS = [
   [0, 7], [0, 11],
   [1, 2], [1, 4], [1, 9],
   [2, 0], [2, 6],
@@ -45,51 +52,92 @@ export const STARS = [
   [6, 12],
 ];
 
-export const ROWS = 7;
-export const COLS = 15;
+// ----------------------------------------------------------------------------
+// Registry der waehlbaren Bloecke.
+//   id    - stabiler Schluessel (wird in den Einstellungen gemerkt)
+//   name  - Anzeigename im Auswahl-Menue
+//   raw   - 7 Zeilen a 15 Farbcodes (y/n/b/r/o)
+//   stars - Sternpositionen [Zeile, Spalte]
+//
+// Aktuell gibt es genau EIN echtes Brett (Standard). Die Platzhalter nutzen
+// vorerst dieselbe Vorlage (gueltiges Brett), bis scharfe Einzelbilder der
+// weiteren Bloecke vorliegen - dann nur `raw`/`stars` des Eintrags ersetzen.
+// ----------------------------------------------------------------------------
+export const BOARDS = [
+  { id: 'standard', name: 'Standard', raw: STANDARD_RAW, stars: STANDARD_STARS },
+  { id: 'block2', name: 'Block 2 (Platzhalter)', raw: STANDARD_RAW, stars: STANDARD_STARS },
+  { id: 'block3', name: 'Block 3 (Platzhalter)', raw: STANDARD_RAW, stars: STANDARD_STARS },
+];
 
-// GRID[row][col] -> Farbschluessel (z.B. COLORS.GELB)
-export const GRID = RAW_GRID.map((row) =>
-  row.split('').map((ch) => {
-    const color = CODE_TO_COLOR[ch];
-    if (!color) throw new Error(`Unbekannter Farbcode "${ch}" im Spielplan`);
-    return color;
-  })
-);
+// ----------------------------------------------------------------------------
+// Aktives Brett. Diese Exporte werden von setActiveBoard() neu gesetzt.
+// ----------------------------------------------------------------------------
+export let GRID = [];           // GRID[row][col] -> Farbschluessel (z.B. COLORS.GELB)
+export let STARS = [];          // [[r, c], ...]
+export let COLOR_COUNTS = {};   // Farbe -> Anzahl Felder (fuer Farb-Komplettierung)
+export let activeBoardId = null;
 
-// Schnelle Pruefung, ob ein Feld einen Stern traegt.
-const STAR_SET = new Set(STARS.map(([r, c]) => `${r},${c}`));
+let STAR_SET = new Set();       // Schnelle Pruefung "Feld hat Stern" (intern)
+
+// RAW (7 Zeilen Codes) -> 2D-Farbraster; wirft bei unbekanntem Code.
+function rawToGrid(raw) {
+  return raw.map((row) =>
+    row.split('').map((ch) => {
+      const color = CODE_TO_COLOR[ch];
+      if (!color) throw new Error(`Unbekannter Farbcode "${ch}" im Spielplan`);
+      return color;
+    })
+  );
+}
+
+function countColors(grid) {
+  const counts = {};
+  for (const row of grid) {
+    for (const color of row) counts[color] = (counts[color] || 0) + 1;
+  }
+  return counts;
+}
+
+// Aktives Brett umschalten: id muss in BOARDS existieren. Rechnet GRID,
+// STARS, COLOR_COUNTS und das interne STAR_SET aus dem gewaehlten Block neu.
+export function setActiveBoard(id) {
+  const board = BOARDS.find((b) => b.id === id) || BOARDS[0];
+  GRID = rawToGrid(board.raw);
+  STARS = board.stars.map(([r, c]) => [r, c]);
+  COLOR_COUNTS = countColors(GRID);
+  STAR_SET = new Set(STARS.map(([r, c]) => `${r},${c}`));
+  activeBoardId = board.id;
+  return board.id;
+}
+
+// Schnelle Pruefung, ob ein Feld einen Stern traegt (liest das aktive Brett).
 export function hasStar(row, col) {
   return STAR_SET.has(`${row},${col}`);
 }
 
-// Anzahl der Felder je Farbe (fuer die Farb-Komplettierung).
-export const COLOR_COUNTS = (() => {
-  const counts = {};
-  for (const row of GRID) {
-    for (const color of row) {
-      counts[color] = (counts[color] || 0) + 1;
-    }
-  }
-  return counts;
-})();
+// Standardbrett als Default aktiv setzen (beim Modul-Laden).
+setActiveBoard(BOARDS[0].id);
 
 // ----------------------------------------------------------------------------
-// Strukturvalidierung des Spielplans (wirft bei Inkonsistenzen).
+// Strukturvalidierung. Prueft jeden Block der Registry (wirft bei Problemen),
+// damit ein fehlerhaft uebertragenes Brett sofort beim Laden auffaellt.
 // ----------------------------------------------------------------------------
-export function validateBoard() {
+function validateOne(board) {
   const problems = [];
+  const grid = rawToGrid(board.raw);
+  const stars = board.stars;
 
-  if (GRID.length !== ROWS) problems.push(`Erwartet ${ROWS} Zeilen, gefunden ${GRID.length}`);
-  GRID.forEach((row, r) => {
+  if (grid.length !== ROWS) problems.push(`Erwartet ${ROWS} Zeilen, gefunden ${grid.length}`);
+  grid.forEach((row, r) => {
     if (row.length !== COLS) problems.push(`Zeile ${r} hat ${row.length} statt ${COLS} Spalten`);
   });
 
-  const total = GRID.reduce((sum, row) => sum + row.length, 0);
+  const total = grid.reduce((sum, row) => sum + row.length, 0);
   if (total !== ROWS * COLS) problems.push(`Erwartet ${ROWS * COLS} Felder, gefunden ${total}`);
 
-  if (Object.keys(COLOR_COUNTS).length !== 5) {
-    problems.push(`Erwartet 5 Farben, gefunden ${Object.keys(COLOR_COUNTS).length}`);
+  const counts = countColors(grid);
+  if (Object.keys(counts).length !== 5) {
+    problems.push(`Erwartet 5 Farben, gefunden ${Object.keys(counts).length}`);
   }
 
   // Jede Zelle muss orthogonal vom Startspalten-Feld erreichbar sein (Brett zusammenhaengend).
@@ -112,10 +160,16 @@ export function validateBoard() {
   if (reached !== ROWS * COLS) problems.push(`Nur ${reached}/${ROWS * COLS} Felder vom Start erreichbar`);
 
   // Sterne muessen innerhalb des Bretts liegen.
-  for (const [r, c] of STARS) {
+  for (const [r, c] of stars) {
     if (r < 0 || r >= ROWS || c < 0 || c >= COLS) problems.push(`Stern ausserhalb des Bretts: ${r},${c}`);
   }
 
-  if (problems.length) throw new Error('Ungueltiger Spielplan:\n - ' + problems.join('\n - '));
+  if (problems.length) {
+    throw new Error(`Ungueltiger Spielplan "${board.name}":\n - ` + problems.join('\n - '));
+  }
+}
+
+export function validateBoard() {
+  for (const board of BOARDS) validateOne(board);
   return true;
 }

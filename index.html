@@ -46,12 +46,15 @@
       </button>
       <button type="button" class="mode-card" data-mode="b">
         <span class="mode-title">📝 PvP</span>
-        <span class="mode-sub">Eigenes Handy · Notizblock</span>
       </button>
     </div>
 
     <button type="button" id="extra-rules-btn" class="extra-rules-btn">
       ⚙️ Zusätzliche Regeln
+    </button>
+
+    <button type="button" id="block-select-btn" class="extra-rules-btn">
+      🧩 Blockauswahl
     </button>
 
     <button id="start-btn" class="primary big">Spiel starten</button>
@@ -164,6 +167,15 @@
         </span>
       </label>
       <button type="button" id="rules-done-btn" class="primary">Fertig</button>
+    </div>
+  </div>
+
+  <!-- Blockauswahl: eigenes Overlay-Menü (Optik wie die Zusätzlichen Regeln) -->
+  <div id="block-modal" class="rules-modal hidden">
+    <div class="rules-modal-box">
+      <h3>Block auswählen</h3>
+      <div id="block-options" class="block-options"></div>
+      <button type="button" id="block-done-btn" class="primary">Fertig</button>
     </div>
   </div>
 
