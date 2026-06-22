@@ -135,7 +135,7 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   **Endspiel-Timing** (vorn → aufs Ende = 2. Farbe drängen, hinten → beendenden Zug meiden).
   Diese Terme brauchen `ctx` = `{ opponents, isActive, scoreDiff, leaderName }`, das
   `flow.js` per `buildAiContext` baut; ohne `ctx` (z.B. Sim/Tests) spielt die KI rein auf
-  das eigene Blatt, `leicht`/`mittel` sind unverändert (neue Gewichte dort 0, Joker-Strafe
+  das eigene Blatt, `mittel` ist unverändert (Leopold-Terme dort 0, Joker-Strafe
   flach). Headless-Bench: Leopold ~89 % Siege gg. „mittel" und lässt am Ende deutlich
   weniger kleine 1er/2er-Reste liegen (~4 statt ~12). Leopold kommentiert frech und
   abwechslungsreich: `classifyMove` ordnet den gewählten Zug einer Situation zu
@@ -145,10 +145,12 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   `recentLines`-Sperre verhindert Wiederholungen (unter ~10 Sprüchen höchstens einer
   doppelt) – `flow.js` zeigt ihn im Kommentarfeld (`#commentary`). **Sprech-Rhythmus
   ans Tempo gekoppelt** (`aiChoose` in `flow.js`): bei den langsamen Stufen *Sehr
-  langsam*/*Langsam* (`aiSpeed >= 1.5`, `chatty`) erzählt Leopold in ZWEI gut lesbaren
-  Schritten – erst ein Denk-/Scan-Spruch (`leopoldThinking`) mit Lesepause, dann der
-  Entscheidungs-Spruch (`leopoldComment`) und ERST danach das Ankreuzen; ab Normal-Tempo
-  bleibt es bei EINEM (dem Entscheidungs-)Spruch ohne Extra-Pause).
+  langsam*/*Langsam* (`aiSpeed >= 1.5`, `chatty`) erzählt die sprechende KI in ZWEI gut
+  lesbaren Schritten – erst ein Denk-/Scan-Spruch (`persona.think`) mit Lesepause, dann der
+  Entscheidungs-Spruch (`persona.comment`) und ERST danach das Ankreuzen; ab Normal-Tempo
+  bleibt es bei EINEM (dem Entscheidungs-)Spruch ohne Extra-Pause). Welche KI redet,
+  liefert `aiPersona(difficulty)` in `flow.js`: Leopold (`'schwer'`) und Kamuran
+  (`'leicht'`, s.u.) reden, `'mittel'` schweigt (Kommentarbox bleibt leer).
   **Leopold verspottet auch DEINE Züge** (`leopoldReactToHuman` in `ai.js`): nach fast
   jedem menschlichen Zug ein frecher, konkret auf den Zug bezogener Spruch. `classifyHumanMove`
   ordnet den Zug ein – `humanStrand` (du lässt einen kaum füllbaren 1er/2er-Rest liegen,
@@ -161,6 +163,23 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   Spiel ist (nicht im PvP/Notizblock, nicht bei leicht/mittel) – `flow.js` `applyHumanResult`
   bestimmt den Spruch VOR dem Anwenden (Blatt noch im Vor-Zug-Zustand), zeigt ihn dann mit
   kurzer Lesepause (≈1,3 s × `aiSpeed`) im Kommentarfeld, bevor es weitergeht.
+  Die leichteste Stufe `leicht` heißt im Menü **„Kamuran – leicht"** (nur Anzeigename,
+  intern weiter `'leicht'`) – das tollpatschige Gegenstück zu Leopold. Spielt **erkennbar
+  schlecht** (verliert ~40:0 gg. „mittel"): `CFG.leicht` hat viel Zufall (`jitter`), fast
+  gratis Joker (`joker: 0.1`, verschwendet sie), schwache Strategie (`strat` < „mittel") und
+  einen **negativen `strand`** – er wird sogar belohnt, wenn er kleine 1er/2er-Reste NEU
+  erzeugt. Damit er deswegen nicht lieber passt, ist der Strand-Term **asymmetrisch**
+  (`evaluatePlacement`): bei `cfg.strand < 0` zählt nur das Löcher-*Reißen* (`Math.max(0,
+  strand)`), sauberes Füllen wird **nicht** bestraft. Zusätzlich passt Kamuran in
+  `chooseMove` zu **~5 % grundlos** (obwohl ein Zug ginge). Die vielen sonstigen Pässe sind
+  *erzwungen* – sein zerfranstes Brett passt selten auf die je 2 Würfel (gewollte Folge des
+  schlechten Spiels, nicht abstellbar). Sprüche: tollpatschig-selbstironisch („schon wieder
+  verbockt" + Ausreden), `classifyKamuranMove` erkennt u.a. den `patzer` über die
+  Fragment-Differenz; `kamuranThinking`/`kamuranComment` ziehen aus `LINES_K` mit
+  Insider-Gags (Oki, klaut Maggis Outfits, drei Mathekurse, zieht über Bauingenieure her,
+  „besser als der Oskar"). Statt zu spotten **bewundert** Kamuran den Menschen
+  (`kamuranReactToHuman`: fragt, wie man so gut spielt / lobt überschwänglich). Verdrahtung
+  wie Leopold über `aiPersona` in `flow.js` (`recentLines`-Wiederholsperre geteilt).
 - `js/ui/` – Rendering & Ablauf: `boardView.js` (`renderSheet` = ein Blatt),
   `flow.js` (`runGame` = **event-gesteuerter Ablauf**: Mensch-Schritte (Würfeln, Zug)
   werden per Klick ausgelöst; `present()` ist die zentrale Weiche, die aus dem
@@ -385,15 +404,16 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   Auswahl im Setup (`#ai-speed`): **Sehr langsam** (3) · Langsam (1,7) · Normal (1) ·
   Schnell (0,55) · Sehr schnell (0,28). Ab `aiSpeed >= 1.5` redet Leopold zweistufig
   (s. ai.js-Eintrag, `chatty`).
-- **Kommentarbox (`#commentary`) ist Spaß-only:** sie zeigt NUR Leopolds Sprüche.
+- **Kommentarbox (`#commentary`) ist Spaß-only:** sie zeigt NUR die Sprüche der
+  sprechenden KI (Leopold oder Kamuran).
   Spieltechnische Hinweise stehen dort nicht mehr – `setHint` (`controls.js`) schreibt nur
   noch in `#message`, `announce`/`present`/`presentRoll`/`presentAiPhase` (`flow.js`)
-  schreiben nicht mehr hinein bzw. leeren sie. Bei anderen KIs/reinem PvP bleibt sie
+  schreiben nicht mehr hinein bzw. leeren sie. Bei „mittel"/reinem PvP bleibt sie
   leer (`present()` leert sie zu Beginn jedes Schritts; innerhalb einer KI-Phase läuft
-  `runAiPhase` ohne `present()`, Leopolds Text bleibt also stehen). **Ausnahme – Mensch-Zug
-  mit Leopold im Spiel:** `applyHumanResult` zeigt dort Leopolds Spott auf den eigenen Zug
-  (`leopoldReactToHuman`, siehe oben). Statuszeile
-  (`#status-bar`) und Log (`#log`) bleiben als sachliche Info erhalten.
+  `runAiPhase` ohne `present()`, der Text bleibt also stehen). **Ausnahme – Mensch-Zug
+  mit sprechender KI im Spiel:** `applyHumanResult` zeigt dort die Reaktion auf den eigenen
+  Zug (`aiPersona(...).reactToHuman` → Leopold spottet, Kamuran bewundert, siehe oben).
+  Statuszeile (`#status-bar`) und Log (`#log`) bleiben als sachliche Info erhalten.
 - Hell/Dunkel: `body.light` überschreibt die CSS-Variablen; Theme + Mute liegen in
   `prefs` (localStorage) und werden sofort beim Umschalten gespeichert.
 - Setup merkt sich Spielernamen, Anzahl, KI-Stärke, KI-Tempo, KI-Auto-Häkchen und

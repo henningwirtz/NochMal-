@@ -43,7 +43,8 @@ const TOTAL_CELLS = GRID_ROWS * GRID_COLS;
 //   joker     - Grund-Strafe je verbrauchtem Joker (knappe Ressource)
 //   jitter    - Zufallsrauschen (macht die KI fehleranfaelliger)
 //   frontier  - Gewicht des Mobilitaets-Bonus (neue Anschlussfelder)
-// Nur fuer Leopold ('schwer') > 0:
+// strand bei Leopold ('schwer') > 0 (vermeidet Reste), bei Kamuran ('leicht') < 0
+// (er HINTERLAESST gern kleine Reste = tollpatschig); bei 'mittel' aus (0):
 //   strand    - Strafe je liegengelassenem Feld einer kleinen (<=5) Farbgruppe
 //   outer     - Gewicht fuer Fortschritt in (wertvollen) Aussenspalten
 //   defense   - Gewicht fuers Wegnehmen eines vom Gegner begehrten Wuerfels
@@ -52,8 +53,11 @@ const TOTAL_CELLS = GRID_ROWS * GRID_COLS;
 //   jokerReserve - Aufschlag, wenn die letzten 2 Joker angetastet wuerden
 export const DIFFICULTIES = ['leicht', 'mittel', 'schwer'];
 const CFG = {
-  leicht: { strat: 0.40, complete: 1, joker: 0.7, jitter: 3.0, frontier: 1,
-            strand: 0, outer: 0, defense: 0, endgame: 0, jokerPhase: false, jokerReserve: 0 },
+  // Kamuran: spielt erkennbar schlecht. strand NEGATIV (er wird sogar belohnt, wenn
+  // er kleine Reste neu erzeugt -> laesst regelmaessig 1er/2er-Loecher liegen), Joker
+  // fast gratis (haut sie fuer Mini-Zuege raus) und viel Zufall (verguckt sich oft).
+  leicht: { strat: 0.55, complete: 1, joker: 0.1, jitter: 2.5, frontier: 1,
+            strand: -0.5, outer: 0, defense: 0, endgame: 0, jokerPhase: false, jokerReserve: 0 },
   mittel: { strat: 0.85, complete: 1.5, joker: 1.2, jitter: 1.0, frontier: 1,
             strand: 0, outer: 0, defense: 0, endgame: 0, jokerPhase: false, jokerReserve: 0 },
   schwer: { strat: 2.40, complete: 6, joker: 5, jitter: 0, frontier: 0,
@@ -193,10 +197,16 @@ function evaluatePlacement(sheet, cells, color, jokersUsed, cfg, ctx, info) {
     strat += cfg.frontier * frontier * 0.08;
   }
 
-  // --- Leopold-Zusatzterme (bei leicht/mittel sind die Gewichte 0) -----------
-  // (4) Sauber fuellen: bestrafe NEU erzeugte kleine freie Fragmente (Differenz
-  // nachher - vorher). Negativ, wenn der Zug einen kleinen Rest sauber wegfuellt.
+  // --- Strand-Term (Fragmente). cfg.strand > 0 = Leopold, < 0 = Kamuran --------
+  // strand = wie viel kleinen Rest der Zug NEU erzeugt (positiv) bzw. wegfuellt
+  // (negativ). Leopold (cfg.strand > 0) bestraft das Reissen UND belohnt das
+  // Fuellen. Kamuran (cfg.strand < 0) wird nur fuers Loecher-REISSEN belohnt, fuers
+  // saubere Fuellen aber NICHT bestraft (sonst wuerde er lieber passen, statt
+  // schlecht zu spielen) -> daher unten Math.max(0, strand) im negativen Fall.
   const strand = cfg.strand ? fragmentBadness(sheet, color) - strandBefore : 0;
+  const strandTerm = cfg.strand >= 0
+    ? cfg.strand * strand                  // Leopold: symmetrisch (Reissen -, Fuellen +)
+    : cfg.strand * Math.max(0, strand);    // Kamuran: nur Reissen belohnen, Fuellen neutral
 
   // (5) Aussenspalten: Fortschritt in noch offenen Spalten, gewichtet mit dem
   // Spaltenwert (Rand = 5, Mitte = 1) und quadratisch (fast-fertige zuerst);
@@ -224,7 +234,7 @@ function evaluatePlacement(sheet, cells, color, jokersUsed, cfg, ctx, info) {
   const advancesOuter = cfg.outer && [...cols].some((c) => c <= 2 || c >= GRID_COLS - 3);
   const jp = jokerPenalty(jokersUsed, sheet.jokersRemaining(), info.filled, advancesOuter, cfg);
 
-  return base + cfg.strat * strat - jp - cfg.strand * strand + cfg.outer * outer + endgame;
+  return base + cfg.strat * strat - jp - strandTerm + cfg.outer * outer + endgame;
 }
 
 // Liefert die moeglichen (color, jokers) bzw. (count, jokers) Auswahlen eines Wuerfels.
@@ -302,9 +312,15 @@ export function chooseMove(sheet, pool, difficulty = 'mittel', ctx = {}) {
     }
   }
 
-  // Fuer Leopold: einordnen, was der gewaehlte Zug bewirkt (fuer den Spruch).
+  // Kamuran ('leicht') passt ab und zu grundlos (~5 %), obwohl ein Zug ginge -
+  // "ich seh grad nix". Macht ihn zusaetzlich tollpatschig.
+  if (best && difficulty === 'leicht' && Math.random() < 0.05) best = null;
+
+  // Einordnen, was der gewaehlte Zug bewirkt (fuer den Spruch).
   if (best && difficulty === 'schwer') {
     best.situation = classifyMove(sheet, best, pool, ctx);
+  } else if (best && difficulty === 'leicht') {
+    best.situation = classifyKamuranMove(sheet, best, ctx);
   }
   return best;
 }
@@ -609,4 +625,163 @@ export function leopoldReactToHuman(sheet, choice, humanName) {
     return draw([LINES.humanGeneral], humanName);
   }
   return draw([LINES[sit]], humanName);
+}
+
+// ============================================================================
+// Kamuran-Persoenlichkeit (die leichte KI 'leicht'). Im Gegensatz zu Leopold
+// (schlau, fies, spottet) ist Kamuran tollpatschig: er lacht ueber seine eigenen
+// Patzer, sucht Ausreden ("der Wuerfel war schuld") und bewundert DICH masslos.
+// Laufende Insider-Gags: sagt staendig "Oki", klaut Maggis Outfits, gibt mit
+// seinen DREI Mathekursen an, zieht ueber Bauingenieure her und findet sich
+// immerhin besser als "der Oskar".
+// ============================================================================
+
+// Ordnet Kamurans Zug einer Spruch-Situation zu. 'patzer' wenn er gerade einen
+// kleinen Rest (1er/2er-Loch) neu erzeugt hat - genau dann passt sein "schon
+// wieder verbockt"-Spruch. Sonst grobe Einordnung fuer etwas Abwechslung.
+function classifyKamuranMove(sheet, move, ctx = {}) {
+  const { cells, color, count, jokersUsed = 0 } = move;
+  const fragBefore = fragmentBadness(sheet, color);
+  for (const [r, c] of cells) sheet.marks[r][c] = true;
+  const fragAfter = fragmentBadness(sheet, color);
+  const newCols = sheet.newlyCompletedColumns(cells);
+  const newColors = sheet.newlyCompletedColors(cells);
+  const star = cells.some(([r, c]) => hasStar(r, c));
+  for (const [r, c] of cells) sheet.marks[r][c] = false;
+
+  if (fragAfter - fragBefore >= 2) return 'patzer'; // kleinen Rest liegen gelassen
+  if (newCols.length || newColors.length) return 'color';
+  const diff = ctx.scoreDiff || 0;
+  if (diff <= -6) return 'behind';
+  if (diff >= 8) return 'ahead';
+  if (star) return 'star';
+  if (jokersUsed > 0) return 'joker';
+  if (count >= 4) return 'big';
+  if (count === 1) return 'lean';
+  return 'standard';
+}
+
+// Spruch-Pool fuer Kamuran. {name} = Name des Fuehrenden (bei Kommentaren) bzw.
+// des Menschen (bei Reaktionen). Grundton tollpatschig/selbstironisch; die Insider
+// stehen verstreut im allgemeinen Pool, kommen also nur ab und zu.
+const LINES_K = {
+  thinkGeneric: [
+    'Moment, wo war ich … ah, mein Zug! Oder?',
+    'Ich hab da so ein Bauchgefühl … oder das war das Frühstück.',
+    'Lass mich kurz zählen … eins, zwei, drei … äh, nochmal von vorn.',
+    'Oki, ich hab voll den Plan. Welcher war das nochmal?',
+    'Ganz ruhig, Kamuran, du hattest DREI Mathekurse.',
+  ],
+  big: [
+    'Wow, so viele auf einmal? Hab ich das gemacht?!',
+    'Guckt mal! GUCKT MAL! So viele Kreuze!',
+    'Volle Kelle! Bestimmt total clever, oder?',
+  ],
+  lean: [
+    'Eins reicht. Mehr wollte ich gar nicht. Ehrlich.',
+    'Klein anfangen, hat Mama immer gesagt.',
+    'Ein Feldchen. Sicher ist sicher.',
+  ],
+  joker: [
+    'Oh, ein Joker! Die sind doch zum Benutzen da, oder?',
+    'War das jetzt schlau? Fühlt sich schlau an.',
+    'Joker raus! … hätt ich den vielleicht aufheben sollen? Egal.',
+  ],
+  star: [
+    'Ein Sternchen! Die mag ich, die glitzern so.',
+    'Stern eingesammelt – das sieht doch hübsch aus.',
+  ],
+  color: [
+    'Ohh, eine Farbe fertig? Ich glaub, das war gut!',
+    'Komplett! Sogar ich krieg sowas mal hin.',
+    'Eine ganze Farbe! Maggi wäre stolz. Oder neidisch.',
+  ],
+  ahead: [
+    'Ich führe?? Das muss ein Versehen sein. Cool aber.',
+    'Moment – ich GEWINNE grad? Hat das wer gefilmt?',
+  ],
+  behind: [
+    'Ihr seid so gut … ich klatsch innerlich für euch.',
+    'Egal wer gewinnt, ich hatte Spaß. Hauptsache Kekse.',
+    'Ich lieg hinten, aber dafür immer noch vor dem Oskar. Innerlich.',
+  ],
+  pass: [
+    'Ähm … ich seh grad gar nichts. Ich pass mal lieber.',
+    'Ist das schon vorbei? Ich war kurz weg.',
+    'Oki, ich setz aus. Hab grad echt keinen Plan.',
+  ],
+  // Selbstironischer Patzer-Spruch ("schon wieder verbockt" + Ausreden).
+  patzer: [
+    'Na toll, schon wieder ins Klo gegriffen. Lag bestimmt am Licht hier.',
+    'Das wollte ich SO. Also … nicht ganz so. Aber fast. Die Würfel sind schuld.',
+    'Hihi, voll daneben. Naja, ich spiel ja nur zum Spaß, ne?',
+    'Mist. Wäre der Würfel anders gefallen, wär das genial gewesen. Echt jetzt.',
+    'Ups, das ergibt gar keinen Sinn. Aber hey – wer fehlerfrei spielt, hat eh kein Herz.',
+    'Oki … das war jetzt nicht so optimal. Aber oki, oki.',
+    'Drei Mathekurse und ich lass trotzdem so ein Loch. Beeindruckend, ne?',
+  ],
+  // Allgemeiner Pool inkl. Insider-Gags (Oki, Maggis Outfits, Mathekurse,
+  // Bauingenieure, "der Oskar"). Wird "immer mal wieder" eingestreut.
+  general: [
+    'Oki, machen wir mal weiter.',
+    'Schickes Outfit, ne? Ist von Maggi. Der weiß das nur noch nicht.',
+    'Ich hatte DREI Mathekurse. Drei! … und kreuz trotzdem den Quatsch an.',
+    'Immerhin kein Bauingenieur – die kriegen ja nicht mal eine gerade Spalte hin.',
+    'Immerhin nicht so schlecht wie der Oskar.',
+    'Spielen wir eigentlich schon, oder üben wir noch?',
+    'Würfel sind irgendwie meine Freunde. Auch wenn sie mich hassen.',
+    'Statistisch gesehen müsste ich gewinnen. Drei Mathekurse, schon vergessen?',
+    'Steht mir das? Hab ich mir bei Maggi geliehen. So halb.',
+    'Ein Bauingenieur hätte hier längst aufgegeben. Ich nicht!',
+    'Oki oki, ich versteh das Spiel jeden Tag ein kleines bisschen mehr.',
+    'Hauptsache, ich schlag den Oskar. Das ist mein einziges Ziel.',
+  ],
+
+  // --- Reaktionen auf DEINEN Zug. {name} = dein Name. Kamuran bewundert dich. ---
+  // Du hast etwas richtig Gutes gemacht (Spalte/Farbe / grosser Zug).
+  humanWow: [
+    'Boah, {name}! Wie machst du das nur?? Zeig mir das nochmal!',
+    'Krass, {name}! Du bist mein Vorbild. Ehrlich jetzt.',
+    '{name}, das sah voll professionell aus. Hattest du auch drei Mathekurse?',
+    'So gut, {name}! Da kann sogar Maggi einpacken.',
+  ],
+  // Du hast gepasst.
+  humanPass: [
+    'Du passt, {name}? Puh, dann bin ich ja nicht der Einzige.',
+    'Oki, {name} setzt aus. Beruhigt mich irgendwie.',
+    'Auch mal nichts gefunden, {name}? Willkommen in meiner Welt.',
+  ],
+  // Standardfall: bewundernd / nachfragend.
+  humanAdmire: [
+    'Wie spielst du eigentlich so gut, {name}? Verrat mir den Trick!',
+    'Stark, {name}! Ich schreib mir das ab, oki?',
+    'Du machst das so souverän, {name}. Ich klau das. Wie Maggis Outfits.',
+    'Sauber, {name}. Davon hatte ich in meinen drei Mathekursen nichts.',
+    'Mensch {name}, du bist echt der Held der Welt!',
+  ],
+};
+
+// Spruch waehrend Kamurans Ueberlegen. Er "scannt" keine Gegner (zu unstrategisch) -
+// nur ein tollpatschiger Denk-Spruch, oft ein allgemeiner (mit Insider-Gags).
+export function kamuranThinking(ctx = {}) {
+  return draw([Math.random() < 0.4 ? LINES_K.general : LINES_K.thinkGeneric], ctx.leaderName);
+}
+
+// Spruch zu Kamurans gewaehltem Zug (oder 'pass'). situation kommt aus
+// classifyKamuranMove. Etwa 40 % der Zeit kommt stattdessen ein allgemeiner Spruch.
+export function kamuranComment(situation, leaderName) {
+  const sit = LINES_K[situation];
+  const useGeneral = !sit || Math.random() < 0.4;
+  return draw([useGeneral ? LINES_K.general : sit], leaderName);
+}
+
+// Kamurans Reaktion auf den menschlichen Zug (oder '' = schweigt). Er bewundert
+// dich: bei gutem Zug ueberschwaenglich, sonst bewundernd/nachfragend; beim faden
+// Standardzug bleibt er auch mal still.
+export function kamuranReactToHuman(sheet, choice, humanName) {
+  const sit = classifyHumanMove(sheet, choice);
+  if (sit === 'humanPass') return draw([LINES_K.humanPass], humanName);
+  if (sit === 'humanGood' || sit === 'humanBig') return draw([LINES_K.humanWow], humanName);
+  if (sit === 'humanMeh' && Math.random() >= 0.7) return '';
+  return draw([LINES_K.humanAdmire], humanName);
 }

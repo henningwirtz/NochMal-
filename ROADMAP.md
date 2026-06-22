@@ -20,7 +20,20 @@ unten/„Erledigt" verschieben.
   spricht den Führenden beim Namen an) im Kommentarfeld (`leopoldThinking`/
   `leopoldComment`, gezeigt in `flow.js` `aiChoose`). „leicht"/„mittel" unverändert
   (neue Gewichte dort 0). Tests/Sim laufen unverändert grün.
-- **Weitere Bot-Namen & Charaktere** – auch „leicht"/„mittel" eigene Namen/Sprüche
+- [x] **Kamuran-Bot (Stufe „leicht")** – die leichte Stufe heißt im Menü
+  „Kamuran – leicht" (intern weiter `'leicht'`). Spielt erkennbar schlecht (verliert
+  ~40:0 gg. „mittel"): `CFG.leicht` mit viel Zufall (`jitter`), fast gratis Jokern,
+  **negativem `strand`** (er wird sogar belohnt, wenn er kleine 1er/2er-Reste neu
+  erzeugt – der Strand-Term ist dafür asymmetrisch: Kamuran wird nur fürs
+  Löcher-*Reißen* belohnt, fürs Füllen aber nicht bestraft, sonst würde er lieber
+  passen) und ~5 % grundlosem Passen (`chooseMove`). Tollpatschig-selbstironischer
+  Sprüche-Pool (`LINES_K` in `ai.js`, situationsabhängig via `classifyKamuranMove`,
+  Patzer-Erkennung über die Fragment-Differenz) inkl. Insider-Gags (Oki, Maggis
+  Outfits, drei Mathekurse, über Bauingenieure herziehen, „besser als der Oskar"):
+  `kamuranThinking`/`kamuranComment`. Er **bewundert** den Menschen statt ihn zu
+  verspotten (`kamuranReactToHuman`). Verdrahtet in `flow.js` über `aiPersona`
+  (Leopold/Kamuran reden, „mittel" schweigt). Tests/Sim grün.
+- **Weiterer Bot-Name & Charakter** – auch „mittel" einen eigenen Namen/Sprüche
   geben; langfristig eigene Bots im Setup anlegbar. → `ai.js`/`flow.js`, `main.js`
   (Setup/Namen), ggf. `js/data/bots.js`.
 - **KI-Spielzüge weiter optimieren** – z.B. flacher Lookahead, Zahlenwürfel-Denial,

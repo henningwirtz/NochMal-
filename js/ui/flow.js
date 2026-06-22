@@ -15,7 +15,23 @@ import { humanTurn } from './controls.js';
 import { recordResults } from './storage.js';
 import { escapeHtml } from './util.js';
 import { playRoll, playMark, playEnd } from './sound.js';
-import { chooseMove, leopoldThinking, leopoldComment, leopoldReactToHuman } from '../core/ai.js';
+import {
+  chooseMove,
+  leopoldThinking, leopoldComment, leopoldReactToHuman,
+  kamuranThinking, kamuranComment, kamuranReactToHuman,
+} from '../core/ai.js';
+
+// Liefert die Sprecher-Persoenlichkeit zur eingestellten KI-Stufe (oder null bei
+// 'mittel' = stumm). Leopold ('schwer') ist fies, Kamuran ('leicht') tollpatschig.
+function aiPersona(difficulty) {
+  if (difficulty === 'schwer') {
+    return { think: leopoldThinking, comment: leopoldComment, reactToHuman: leopoldReactToHuman };
+  }
+  if (difficulty === 'leicht') {
+    return { think: kamuranThinking, comment: kamuranComment, reactToHuman: kamuranReactToHuman };
+  }
+  return null;
+}
 import {
   COLOR_LABEL,
   COLOR_HEX,
@@ -203,22 +219,24 @@ export function runGame(game, dom) {
   }
 
   async function applyHumanResult(idx, player, res) {
-    // Leopold (KI 'schwer') verspottet den menschlichen Zug. Spruch VOR dem
-    // Anwenden bestimmen, solange das Blatt noch im Vor-Zug-Zustand ist. Nur im
-    // KI-Modus (nicht PvP/Notizblock) und nur wenn Leopold mitspielt.
-    const leopoldInGame = game.aiDifficulty === 'schwer'
+    // Die sprechende KI reagiert auf den menschlichen Zug: Leopold ('schwer')
+    // verspottet ihn, Kamuran ('leicht') bewundert ihn. Spruch VOR dem Anwenden
+    // bestimmen, solange das Blatt noch im Vor-Zug-Zustand ist. Nur im KI-Modus
+    // (nicht PvP/Notizblock) und nur wenn eine sprechende KI mitspielt.
+    const persona = aiPersona(game.aiDifficulty);
+    const personaInGame = persona
       && !game.relaxed && game.players.some((p) => !p.isHuman);
     let leoTaunt = '';
-    if (leopoldInGame) {
+    if (personaInGame) {
       if (res.action === 'pass') {
-        leoTaunt = leopoldReactToHuman(player.sheet, null, player.name);
+        leoTaunt = persona.reactToHuman(player.sheet, null, player.name);
       } else {
         const pool = game.availablePool(idx);
         const cDie = pool.colorDice.find((d) => d.id === res.choice.colorId);
         const nDie = pool.numberDice.find((d) => d.id === res.choice.numberId);
         const jokersUsed = (cDie && cDie.face === JOKER ? 1 : 0)
           + (nDie && nDie.face === JOKER ? 1 : 0);
-        leoTaunt = leopoldReactToHuman(player.sheet, { ...res.choice, jokersUsed }, player.name);
+        leoTaunt = persona.reactToHuman(player.sheet, { ...res.choice, jokersUsed }, player.name);
       }
     }
 
@@ -332,14 +350,14 @@ export function runGame(game, dom) {
   // ankreuzen. Legt vorher einen Schnappschuss für die Zurück-Taste ab.
   async function aiChoose(idx, player) {
     const spd = game.aiSpeed || 1;
-    const leopold = game.aiDifficulty === 'schwer';
+    const persona = aiPersona(game.aiDifficulty); // Leopold/Kamuran reden, 'mittel' schweigt
     // Sprech-Rhythmus an das Tempo angepasst: bei den langsamen Stufen (Sehr
-    // langsam/Langsam, spd >= 1.5) erzählt Leopold in ZWEI gut lesbaren Schritten -
-    // erst ein Denk-/Scan-Spruch ("gucken wir erst mal, was Henning hat …"), kurze
-    // Lesepause, dann der Entscheidungs-Spruch und ERST danach das Ankreuzen. Ab
-    // Normal-Tempo bleibt es bei EINEM (dem Entscheidungs-)Spruch. Die Kommentar-Box
-    // ist Spass-only - bei anderen KIs/PvP/Mensch bleibt sie leer (siehe present()).
-    const chatty = leopold && spd >= 1.5;
+    // langsam/Langsam, spd >= 1.5) erzählt die KI in ZWEI gut lesbaren Schritten -
+    // erst ein Denk-Spruch, kurze Lesepause, dann der Entscheidungs-Spruch und ERST
+    // danach das Ankreuzen. Ab Normal-Tempo bleibt es bei EINEM (dem Entscheidungs-)
+    // Spruch. Die Kommentar-Box ist Spass-only - bei 'mittel'/PvP/Mensch bleibt sie
+    // leer (siehe present()).
+    const chatty = persona && spd >= 1.5;
     const ctx = buildAiContext(game, idx);
     pendingSnapshot = game.snapshot();
     renderBoards(dom, game, { chooserIdx: idx });
@@ -348,7 +366,7 @@ export function runGame(game, dom) {
 
     // Schritt 1 (nur im Plauder-Tempo): eigener Denk-Spruch + Lesepause.
     if (chatty && dom.commentary) {
-      dom.commentary.textContent = leopoldThinking(ctx);
+      dom.commentary.textContent = persona.think(ctx);
       await delay(1500 * spd);
     } else {
       await delay(700 * spd);
@@ -356,7 +374,7 @@ export function runGame(game, dom) {
 
     const move = chooseMove(player.sheet, game.availablePool(idx), game.aiDifficulty, ctx);
     if (!move) {
-      if (leopold && dom.commentary) dom.commentary.textContent = leopoldComment('pass', ctx.leaderName);
+      if (persona && dom.commentary) dom.commentary.textContent = persona.comment('pass', ctx.leaderName);
       if (chatty) await delay(1200 * spd);
       game.submitPass(idx);
       announce(dom, `${player.name} (KI) passt.${game.passPenalty ? ' (−1 Punkt)' : ''}`);
@@ -368,8 +386,8 @@ export function runGame(game, dom) {
 
     // Schritt 2: Entscheidungs-Spruch. Im Plauder-Tempo gut lesbar stehen lassen,
     // BEVOR angekreuzt wird; sonst läuft er parallel zum Ankreuzen mit.
-    if (leopold && dom.commentary) {
-      dom.commentary.textContent = leopoldComment(move.situation, ctx.leaderName);
+    if (persona && dom.commentary) {
+      dom.commentary.textContent = persona.comment(move.situation, ctx.leaderName);
       if (chatty) await delay(1400 * spd);
     }
 
