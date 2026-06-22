@@ -293,5 +293,60 @@ export function runTests() {
     eq(chooseMove(full, pool, 'schwer'), null, 'ohne Option passt die KI');
   });
 
+  // 17) Hausregel "Joker als 6": ein zusammenhaengender 6er-Farbverbund laesst sich
+  // nur mit aktiver Regel (Zahlenjoker als 6) ankreuzen, sonst Fehler.
+  test('Hausregel: Zahlenjoker als 6', () => {
+    // Garantiert zusammenhaengender gruener 6er-Block (siehe data/board.js).
+    const block = [[1, 3], [2, 3], [2, 4], [2, 5], [2, 6], [3, 3]];
+    const sameBlock = (p) => p.length === block.length
+      && block.every(([r, c]) => toKeySet(p).has(key(r, c)));
+
+    // legalPlacements laesst die Groesse 6 jetzt zu (Anker ueber benachbartes Kreuz).
+    const sheet = new Sheet();
+    sheet.marks[2][7] = true; sheet.hasMarkedAny = true; // Anker neben dem Block
+    assert(isValidPlacement(sheet, COLORS.GRUEN, 6, block), '6er-Block ist regelkonform');
+    assert(legalPlacements(sheet, COLORS.GRUEN, 6).some(sameBlock), '6er-Block unter den legalen Platzierungen');
+
+    const pool = { colorDice: [{ id: 'c0', face: COLORS.GRUEN }], numberDice: [{ id: 'n0', face: JOKER }] };
+
+    // Ohne Regel: Zahlenjoker als 6 -> Fehler, nichts angekreuzt.
+    const off = new Game([{ name: 'A', isHuman: true }]);
+    off.players[0].sheet.marks[2][7] = true; off.players[0].sheet.hasMarkedAny = true;
+    stageTurn(off, pool);
+    assertThrows(() => off.submitChoice(0, { colorId: 'c0', numberId: 'n0', color: COLORS.GRUEN, count: 6, cells: block }), 'ohne Regel kein 6er-Joker');
+    assert(!off.players[0].sheet.isMarked(3, 3), 'ohne Regel nichts angekreuzt');
+
+    // Mit Regel: 6er-Joker erlaubt (verbraucht 1 Joker) und kreuzt an.
+    const on = new Game([{ name: 'A', isHuman: true }], { jokerSix: true });
+    on.players[0].sheet.marks[2][7] = true; on.players[0].sheet.hasMarkedAny = true;
+    stageTurn(on, pool);
+    on.submitChoice(0, { colorId: 'c0', numberId: 'n0', color: COLORS.GRUEN, count: 6, cells: block });
+    eq(on.players[0].sheet.jokersUsed, 1, 'ein Joker fuer die 6');
+    assert(on.players[0].sheet.isMarked(3, 3), '6er-Block angekreuzt');
+  });
+
+  // 18) Hausregel "Minuspunkt pro Pass": jeder Pass zaehlt; mit aktiver Regel
+  // mindert er das Total um 1, ohne Regel kostet er nichts.
+  test('Hausregel: Minuspunkt pro Pass', () => {
+    // Ohne Regel: Pass wird gezaehlt, aber kein Abzug.
+    const off = new Game([{ name: 'A', isHuman: true }]);
+    const sa = off.players[0].sheet;
+    const before = sa.computeScore().total;
+    off.order = [0]; off.pointer = 0; off.activeIndex = 0;
+    off.submitPass(0);
+    eq(sa.passes, 1, 'Pass gezaehlt');
+    eq(sa.computeScore().total, before, 'ohne Regel kein Abzug');
+
+    // Mit Regel: zwei Paesse -> -2.
+    const on = new Game([{ name: 'A', isHuman: true }], { passPenalty: true });
+    const sb = on.players[0].sheet;
+    const b0 = sb.computeScore().total;
+    on.order = [0]; on.pointer = 0; on.activeIndex = 0; on.submitPass(0);
+    on.order = [0]; on.pointer = 0; on.submitPass(0);
+    eq(sb.passes, 2, 'zwei Paesse gezaehlt');
+    eq(sb.computeScore().passPenalty, 2, 'Pass-Strafe = 2');
+    eq(sb.computeScore().total, b0 - 2, 'Total um 2 gemindert');
+  });
+
   return results;
 }

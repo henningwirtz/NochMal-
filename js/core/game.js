@@ -19,13 +19,15 @@ import {
   FREE_ROLLS,
   JOKER,
   GRID_COLS,
+  MAX_PER_TURN,
+  PASS_PENALTY,
 } from './constants.js';
 import { rollAll } from './dice.js';
 import { Sheet } from './sheet.js';
 import { isValidPlacement, isRelaxedPlacement } from './rules.js';
 
 export class Game {
-  constructor(playerConfigs, { soloMode = false, aiDifficulty = 'mittel', moveTimer = 0, aiSpeed = 1, relaxed = false, aiAuto = false } = {}) {
+  constructor(playerConfigs, { soloMode = false, aiDifficulty = 'mittel', moveTimer = 0, aiSpeed = 1, relaxed = false, aiAuto = false, jokerSix = false, passPenalty = false } = {}) {
     // playerConfigs: [{ name, isHuman }]
     this.players = playerConfigs.map((p, i) => ({
       id: i,
@@ -39,6 +41,12 @@ export class Game {
     this.moveTimer = moveTimer; // Sekunden je Mensch-Zug (0 = aus)
     this.aiSpeed = aiSpeed;     // Faktor auf KI-Pausen (1 = normal, >1 langsamer)
     this.aiAuto = aiAuto;       // true = KI-Phasen ohne Bestätigungsklick automatisch starten
+
+    // Optionale Hausregeln.
+    this.jokerSix = jokerSix;       // Zahlenjoker darf auch 6 Felder ankreuzen
+    this.passPenalty = passPenalty; // jedes Passen kostet 1 Minuspunkt
+    // Pass-Strafe je Blatt hinterlegen, damit computeScore() parameterlos bleibt.
+    for (const p of this.players) p.sheet.passPenalty = passPenalty ? PASS_PENALTY : 0;
     this.activeIndex = 0;
     this.rollCount = 0;
 
@@ -147,7 +155,8 @@ export class Game {
     }
     if (numberDie.face === JOKER) {
       jokersUsed++;
-      if (count < 1 || count > 5) throw new Error('Joker-Zahl muss 1..5 sein');
+      const maxCount = this.jokerSix ? 6 : 5;
+      if (count < 1 || count > maxCount) throw new Error(`Joker-Zahl muss 1..${maxCount} sein`);
     } else if (numberDie.face !== count) {
       throw new Error('Anzahl passt nicht zum Wuerfel');
     }
@@ -189,7 +198,8 @@ export class Game {
       throw new Error('Dieser Spieler ist gerade nicht am Zug');
     }
     const player = this.players[playerIndex];
-    if (!isRelaxedPlacement(player.sheet, cells)) {
+    const maxCells = this.jokerSix ? 6 : MAX_PER_TURN;
+    if (!isRelaxedPlacement(player.sheet, cells, maxCells)) {
       throw new Error('Ungueltige Platzierung');
     }
     player.sheet.mark(cells);
@@ -201,6 +211,9 @@ export class Game {
     if (this.currentChooserIndex() !== playerIndex) {
       throw new Error('Dieser Spieler ist gerade nicht am Zug');
     }
+    // Hausregel: jeder Pass wird mitgezaehlt (kostet bei aktiver Regel je 1 Punkt;
+    // bei Rate 0 schadet das Zaehlen nicht). Deckt Mensch, KI und Timeout ab.
+    this.players[playerIndex].sheet.passes++;
     // Aktiver Spieler passt -> removedDice bleiben null -> passive duerfen alle 6.
     this._advance();
   }
@@ -369,6 +382,7 @@ export class Game {
         marks: p.sheet.marks,
         jokersUsed: p.sheet.jokersUsed,
         hasMarkedAny: p.sheet.hasMarkedAny,
+        passes: p.sheet.passes,
         columnAward: p.sheet.columnAward,
         columnTopStruck: p.sheet.columnTopStruck,
         colorAward: p.sheet.colorAward,
@@ -395,6 +409,7 @@ export class Game {
       p.sheet.marks = ss.marks;
       p.sheet.jokersUsed = ss.jokersUsed;
       p.sheet.hasMarkedAny = ss.hasMarkedAny;
+      p.sheet.passes = ss.passes;
       p.sheet.columnAward = ss.columnAward;
       p.sheet.columnTopStruck = ss.columnTopStruck;
       p.sheet.colorAward = ss.colorAward;

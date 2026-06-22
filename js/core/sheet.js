@@ -22,6 +22,11 @@ export class Sheet {
     this.jokersUsed = 0;
     this.hasMarkedAny = false;
 
+    // Hausregel "Minuspunkt pro Pass": Anzahl der Pässe und die Strafe je Pass
+    // (0 = Regel aus). Game setzt die Rate je Blatt; so bleibt computeScore() parameterlos.
+    this.passes = 0;
+    this.passPenalty = 0;
+
     // Wertung: pro Spalte der diesem Spieler gutgeschriebene Wert (oder null).
     this.columnAward = Array(GRID_COLS).fill(null);
     // Spalten, bei denen der obere Wert bereits von einem anderen vergeben ist.
@@ -169,7 +174,8 @@ export class Sheet {
     const columns = this.columnAward.reduce((a, v) => a + (v || 0), 0);
     const jokerBonus = this.jokersRemaining() * UNUSED_JOKER_BONUS;
     const starPenalty = this.uncrossedStars() * STAR_PENALTY;
-    const total = bonus + columns + jokerBonus - starPenalty;
+    const passPenalty = this.passes * this.passPenalty;
+    const total = bonus + columns + jokerBonus - starPenalty - passPenalty;
     return {
       bonus,
       columns,
@@ -177,6 +183,8 @@ export class Sheet {
       jokersRemaining: this.jokersRemaining(),
       starPenalty,
       uncrossedStars: this.uncrossedStars(),
+      passPenalty,
+      passes: this.passes,
       total,
     };
   }

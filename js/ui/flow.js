@@ -224,7 +224,8 @@ export function runGame(game, dom) {
 
     if (res.action === 'pass') {
       game.submitPass(idx);
-      announce(dom, res.timedOut ? `${player.name}: Zeit abgelaufen – gepasst.` : `${player.name} passt.`);
+      const cost = game.passPenalty ? ' (−1 Punkt)' : '';
+      announce(dom, (res.timedOut ? `${player.name}: Zeit abgelaufen – gepasst.` : `${player.name} passt.`) + cost);
     } else if (game.relaxed) {
       game.submitMarks(idx, res.choice.cells);
       playMark();
@@ -358,7 +359,7 @@ export function runGame(game, dom) {
       if (leopold && dom.commentary) dom.commentary.textContent = leopoldComment('pass', ctx.leaderName);
       if (chatty) await delay(1200 * spd);
       game.submitPass(idx);
-      announce(dom, `${player.name} (KI) passt.`);
+      announce(dom, `${player.name} (KI) passt.${game.passPenalty ? ' (−1 Punkt)' : ''}`);
       await delay(500 * spd);
       history.push(pendingSnapshot);
       renderScoreboard(dom, game);
@@ -444,6 +445,7 @@ function buildAiContext(game, idx) {
     isActive: idx === game.activeIndex,
     scoreDiff: opponents.length ? myTotal - bestOpp : 0,
     leaderName: leaderName || 'ihr',
+    jokerSix: game.jokerSix, // Hausregel: Zahlenjoker darf auch 6 ankreuzen
   };
 }
 // Header-Chip: kompakter Punktestand des aktuell Waehlenden (kein "am Zug"-Text
@@ -586,10 +588,11 @@ function renderScoreboard(dom, game) {
     row.className = 'score-row';
     if (p.id === game.activeIndex) row.classList.add('active');
     const colors = p.sheet.completedColorCount();
+    const passInfo = game.passPenalty && s.passes > 0 ? ` · −${s.passPenalty} Pässe` : '';
     row.innerHTML = `
       <span class="sr-name">${escapeHtml(p.name)}${p.isHuman ? '' : ' (KI)'}</span>
       <span class="sr-total">${s.total} P.</span>
-      <span class="sr-meta">${colors} Farbe(n) · ${s.jokersRemaining} Joker</span>
+      <span class="sr-meta">${colors} Farbe(n) · ${s.jokersRemaining} Joker${passInfo}</span>
     `;
     dom.scoreboard.append(row);
   }
@@ -695,11 +698,13 @@ function showEnd(dom, game, solo = false) {
   }
   panel.append(head);
 
+  // Spalte "−Pässe" nur zeigen, wenn die Hausregel aktiv ist.
+  const showPass = !!game.passPenalty;
   const table = document.createElement('table');
   table.className = 'end-table';
   table.innerHTML = `
     <thead><tr>
-      <th>Spieler</th><th>Bonus</th><th>Spalten</th><th>+Joker</th><th>−Sterne</th><th>TOTAL</th>
+      <th>Spieler</th><th>Bonus</th><th>Spalten</th><th>+Joker</th><th>−Sterne</th>${showPass ? '<th>−Pässe</th>' : ''}<th>TOTAL</th>
     </tr></thead>`;
   const tbody = document.createElement('tbody');
   for (const r of rows) {
@@ -711,6 +716,7 @@ function showEnd(dom, game, solo = false) {
       <td>${r.columns}</td>
       <td>+${r.jokerBonus}</td>
       <td>−${r.starPenalty}</td>
+      ${showPass ? `<td>−${r.passPenalty}</td>` : ''}
       <td><strong>${r.total}</strong></td>`;
     tbody.append(tr);
   }

@@ -21,6 +21,8 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
     const pool = game.availablePool(playerIndex);
     const poolColorIds = new Set(pool.colorDice.map((d) => d.id));
     const poolNumberIds = new Set(pool.numberDice.map((d) => d.id));
+    // Notizblock-Obergrenze pro Zug: normal 5, mit Hausregel "Joker als 6" auch 6.
+    const relaxedMax = game.jokerSix ? 6 : 5;
 
     const state = {
       colorId: null,
@@ -57,7 +59,9 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       const numberDie = state.numberId ? numberDieById(state.numberId) : null;
       if (!colorDie || !numberDie) return [];
       const colors = colorDie.face === JOKER ? COLOR_ORDER : [colorDie.face];
-      const counts = numberDie.face === JOKER ? [1, 2, 3, 4, 5] : [numberDie.face];
+      // Zahlenjoker: 1..5, mit Hausregel "Joker als 6" zusaetzlich 6.
+      const jokerCounts = game.jokerSix ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5];
+      const counts = numberDie.face === JOKER ? jokerCounts : [numberDie.face];
       const all = [];
       for (const color of colors) {
         for (const count of counts) {
@@ -130,8 +134,8 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
         }
         if (sheet.isMarked(r, c)) return;
         const tentative = [...state.selected, [r, c]];
-        if (!isRelaxedPlacement(sheet, tentative)) {
-          setHint('Nur Felder einer Farbe, erreichbar ab Startspalte H oder neben einem Kreuz (max. 5).');
+        if (!isRelaxedPlacement(sheet, tentative, relaxedMax)) {
+          setHint(`Nur Felder einer Farbe, erreichbar ab Startspalte H oder neben einem Kreuz (max. ${relaxedMax}).`);
           return;
         }
         state.selected.push([r, c]);
@@ -183,7 +187,7 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       for (let r = 0; r < GRID_ROWS; r++) {
         for (let c = 0; c < GRID_COLS; c++) {
           if (sheet.isMarked(r, c) || selectedSet.has(key(r, c))) continue;
-          if (isRelaxedPlacement(sheet, [...state.selected, [r, c]])) highlight.add(key(r, c));
+          if (isRelaxedPlacement(sheet, [...state.selected, [r, c]], relaxedMax)) highlight.add(key(r, c));
         }
       }
       renderBoards({
@@ -209,8 +213,7 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       confirm.disabled = state.selected.length === 0;
       confirm.classList.add('primary');
 
-      const pass = button('Passen', () => finish({ action: 'pass' }));
-      pass.classList.add('pass');
+      const pass = makePassButton();
 
       const undo = button('↶ Feld zurück', () => {
         if (state.selected.length) {
@@ -321,8 +324,7 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       undo.title = 'Zuletzt gewähltes Feld wieder abwählen';
       undo.disabled = state.selected.length === 0;
 
-      const pass = button('Passen', () => finish({ action: 'pass' }));
-      pass.classList.add('pass');
+      const pass = makePassButton();
 
       // Reihenfolge fuer die Daumen-Ergonomie: Bestaetigen, Passen, Rueckgaengig.
       dom.actionBar.append(confirm, pass, undo);
@@ -344,6 +346,14 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       const b = document.createElement('button');
       b.textContent = text;
       b.addEventListener('click', onClick);
+      return b;
+    }
+    // Passen-Knopf. Mit Hausregel "Minuspunkt pro Pass" zeigt er "Passen (−1)" und
+    // erklaert per Tooltip, dass jedes Passen 1 Punkt kostet.
+    function makePassButton() {
+      const b = button(game.passPenalty ? 'Passen (−1)' : 'Passen', () => finish({ action: 'pass' }));
+      b.classList.add('pass');
+      if (game.passPenalty) b.title = 'Passen kostet 1 Minuspunkt (Sonderregel)';
       return b;
     }
     function colorDieChip(die) {

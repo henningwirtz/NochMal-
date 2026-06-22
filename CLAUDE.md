@@ -10,6 +10,31 @@ Unterstützt Pass-and-Play (1–6 Spieler), heuristische KI-Gegner (3 Schwierigk
 und die Solo-Variante. Läuft als **PWA** (installierbar, offline, touch-optimiert) –
 am Handy via GitHub Pages, siehe README („Auf dem Handy spielen").
 
+## Zusatzregeln (Hausregeln)
+
+Im Startbildschirm (zwischen Modus-Auswahl und „Spiel starten") klappt der Knopf
+**„Zusätzliche Regeln"** (`<details class="extra-rules">` in `index.html`) zwei einzeln
+wählbare Ankreuzfelder auf – frei kombinierbar, **gelten in beiden Modi** (KI + PvP):
+
+- **Zahlenjoker auch als 6** (`game.jokerSix`, Checkbox `#rule-joker-six`): der
+  Zahlenjoker („?") darf statt 1–5 auch **6 zusammenhängende Felder einer Farbe** in
+  einem Zug ankreuzen. Umgesetzt durch eine gelockerte Obergrenze: `legalPlacements`
+  lässt Größe 6 zu, `game._resolveDice` erlaubt bei Zahlenjoker `count` bis 6,
+  `controls.js currentPlacements` nimmt 6 in die Joker-Anzahlen auf,
+  `isRelaxedPlacement(sheet, cells, maxCells)` bekommt das Limit per Parameter
+  (`game.jokerSix ? 6 : MAX_PER_TURN`), und die KI nutzt es fair mit
+  (`ai.js countOptions(…, ctx.jokerSix)`, gespeist aus `flow.js buildAiContext`).
+- **Minuspunkt pro Pass** (`game.passPenalty`, Checkbox `#rule-pass-penalty`): jedes
+  Passen kostet **−1 Punkt**. `sheet.passes` zählt die Pässe (in `game.submitPass`,
+  deckt Mensch/KI/Timeout ab), `sheet.passPenalty` ist die Rate je Blatt (von `Game`
+  gesetzt, Konstante `PASS_PENALTY`), `computeScore()` zieht `passes * passPenalty` vom
+  Total ab (bleibt parameterlos). Hinweise für den Spieler: Passen-Knopf zeigt
+  „Passen (−1)", der laufende Punktestand „· −X Pässe", die Endwertung eine Spalte
+  „−Pässe"; `snapshot/restore` sichern `passes` (Zurück-Taste).
+
+Beide Flags werden in `main.js` aus den Checkboxen gelesen, an `new Game(...)` übergeben
+und via `saveSettings/loadSettings` gemerkt.
+
 ## Roadmap / geplante Features
 
 Geplante und erledigte Features stehen in **`ROADMAP.md`** (nach Kategorien:

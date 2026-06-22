@@ -55,7 +55,9 @@ function isConnected(cells) {
 // Alle gueltigen Platzierungen fuer (color, count).
 // Rueckgabe: Array von Platzierungen, jede ein Array aus [r,c]-Feldern.
 export function legalPlacements(sheet, color, count) {
-  if (count < 1 || count > 5) return [];
+  // Obergrenze 6 (statt 5) zulassen - der Zahlenjoker darf bei aktiver Hausregel
+  // "Joker als 6" einen 6er-Verbund ankreuzen. Nicht-Joker-Wuerfel fragen nie 6 an.
+  if (count < 1 || count > 6) return [];
 
   // Kandidaten: unmarkierte Felder der gewuenschten Farbe.
   const candidates = [];
@@ -143,10 +145,10 @@ export function hasLegalPlacement(sheet, color, count) {
 // Lockere Pruefung fuer den Notizblock-Modus: das Ankreuzen ist unabhaengig von den
 // (real gewuerfelten) Wuerfeln, muss aber die NOCH-MAL!-Grundregeln einhalten:
 // zusammenhaengend, an Startspalte/bestehendes Kreuz verankert, EINE Farbe und
-// hoechstens 5 Felder (Zahlenwuerfel 1-5).
-export function isRelaxedPlacement(sheet, cells) {
+// hoechstens maxCells Felder (normal 5; mit Hausregel "Joker als 6" auch 6).
+export function isRelaxedPlacement(sheet, cells, maxCells = MAX_PER_TURN) {
   if (!Array.isArray(cells) || cells.length < 1) return false;
-  if (cells.length > MAX_PER_TURN) return false; // nie mehr als 5 in einem Zug
+  if (cells.length > maxCells) return false; // nie mehr als maxCells in einem Zug
   const keys = new Set(cells.map(([r, c]) => key(r, c)));
   if (keys.size !== cells.length) return false; // keine Duplikate
   const color = GRID[cells[0][0]][cells[0][1]];

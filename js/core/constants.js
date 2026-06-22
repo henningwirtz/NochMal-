@@ -65,6 +65,9 @@ export const JOKER_BOXES = 8;
 export const UNUSED_JOKER_BONUS = 1; // je uebrigem "!" bei Spielende
 export const STAR_PENALTY = 2;       // je nicht angekreuztem Stern
 
+// Optionale Hausregeln.
+export const PASS_PENALTY = 1;       // Minuspunkt je Pass (nur wenn Regel aktiv)
+
 // Sonderregeln.
 export const FREE_ROLLS = 3; // erste 3 Wuerfe: alle duerfen aus allen 6 Wuerfeln waehlen
 export const MAX_PER_TURN = 5;

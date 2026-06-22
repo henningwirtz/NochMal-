@@ -225,9 +225,11 @@ function colorOptions(face, jokersRemaining) {
   }
   return [{ color: face, jokers: 0 }];
 }
-function countOptions(face, jokersRemaining) {
+function countOptions(face, jokersRemaining, jokerSix = false) {
   if (face === JOKER) {
-    return jokersRemaining > 0 ? [1, 2, 3, 4, 5].map((n) => ({ count: n, jokers: 1 })) : [];
+    if (jokersRemaining <= 0) return [];
+    const counts = jokerSix ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5];
+    return counts.map((n) => ({ count: n, jokers: 1 }));
   }
   return [{ count: face, jokers: 0 }];
 }
@@ -265,7 +267,7 @@ export function chooseMove(sheet, pool, difficulty = 'mittel', ctx = {}) {
     const denial = denialBonus(cDie.face, pool, ctx, cfg);
     for (const nDie of pool.numberDice) {
       for (const co of colorOptions(cDie.face, sheet.jokersRemaining())) {
-        for (const no of countOptions(nDie.face, sheet.jokersRemaining())) {
+        for (const no of countOptions(nDie.face, sheet.jokersRemaining(), ctx.jokerSix)) {
           const jokersUsed = co.jokers + no.jokers;
           if (jokersUsed > sheet.jokersRemaining()) continue;
 

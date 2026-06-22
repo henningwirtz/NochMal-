@@ -119,6 +119,24 @@ button.big { font-size: 1.1rem; padding: 12px 24px; margin-top: 10px; }
 .rules summary { cursor: pointer; color: var(--ink); }
 .rules ul { line-height: 1.5; }
 
+/* Zusätzliche Regeln (Hausregeln) - Knopf-Optik fürs Summary, klappt die
+   Ankreuzfelder auf. Sitzt zwischen Modus-Auswahl und "Spiel starten". */
+.extra-rules { width: 100%; max-width: 480px; margin: 0 0 12px; }
+.extra-rules > summary {
+  cursor: pointer;
+  list-style: none;
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-weight: 600;
+}
+.extra-rules > summary::-webkit-details-marker { display: none; }
+.extra-rules > summary::after { content: " ▾"; color: var(--muted); }
+.extra-rules[open] > summary::after { content: " ▴"; }
+.extra-rules .check { margin: 10px 4px 0; align-items: flex-start; }
+
 /* ---------- Game header ---------- */
 .game-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .status-bar { font-size: 1.1rem; font-weight: 700; }
@@ -801,14 +819,16 @@ body.mode-notepad .totals { margin-top: 0; }
     max-width: none; height: 100dvh; overflow: hidden;
     display: grid; gap: 8px 14px;
     grid-template-columns: 0.85fr 1.3fr 1fr;   /* Modus | Einstellungen | Liste */
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
     grid-template-areas:
-      "head  head     head"
-      "mode  settings side"
-      "start settings side"
-      "start settings rules";
+      "head   head     head"
+      "mode   settings side"
+      "xrules settings side"
+      "start  settings side"
+      "start  settings rules";
     align-items: start;
   }
+  .extra-rules { grid-area: xrules; max-width: none; margin: 0; }
   .setup-head { grid-area: head; margin: 0; }
   .logo { font-size: 2rem; }
 

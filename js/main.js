@@ -58,6 +58,8 @@ if (saved) {
   if (saved.aiAuto) $('ai-auto').checked = true;
   if (saved.timerOn) $('timer-on').checked = true;
   if (saved.timerSeconds) $('timer-seconds').value = String(saved.timerSeconds);
+  if (saved.jokerSix) $('rule-joker-six').checked = true;
+  if (saved.passPenalty) $('rule-pass-penalty').checked = true;
   if (saved.mode === 'b') currentMode = 'b';
 }
 
@@ -274,6 +276,9 @@ startBtn.addEventListener('click', () => {
   const aiAuto = $('ai-auto').checked;
   const timerOn = $('timer-on').checked;
   const timerSeconds = Math.max(5, parseInt($('timer-seconds').value, 10) || 30);
+  // Zusatzregeln (Hausregeln) - gelten in beiden Modi.
+  const jokerSix = $('rule-joker-six').checked;
+  const passPenalty = $('rule-pass-penalty').checked;
 
   let configs, count, soloMode, moveTimer, relaxed;
   if (notepad) {
@@ -303,10 +308,12 @@ startBtn.addEventListener('click', () => {
     aiAuto,
     timerOn,
     timerSeconds,
+    jokerSix,
+    passPenalty,
     slots: slots.map((s) => ({ name: s.name, isHuman: s.isHuman })),
   });
 
-  const game = new Game(configs, { soloMode, aiDifficulty, moveTimer, aiSpeed, relaxed, aiAuto });
+  const game = new Game(configs, { soloMode, aiDifficulty, moveTimer, aiSpeed, relaxed, aiAuto, jokerSix, passPenalty });
 
   $('setup-screen').classList.add('hidden');
   dom.endPanel.classList.add('hidden');
