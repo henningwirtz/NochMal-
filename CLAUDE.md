@@ -214,7 +214,13 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   „Spiel starten"-Knopf direkt darunter** (`#start-btn` als direktes Kind von
   `#setup-screen`, grid-area `start` in der linken Spalte unter `mode`), Mitte
   (am breitesten) Einstellungen, rechts die Bestenliste; passt ohne Scrollen
-  (`height: 100dvh; overflow: hidden`, nur Liste scrollt). **Mitte & rechts enden exakt
+  (`overflow: hidden`, nur Liste scrollt). **Höhe = Sichtbereich MINUS Body-Padding:**
+  `height: calc(100dvh − Padding-oben − Padding-unten)`, und das vertikale Body-Padding
+  ist im Querformat klein gesetzt (`max(6px, env(safe-area-inset-*))`). Sonst ragte der
+  100dvh-hohe Screen um die Padding-Höhe nach unten heraus und „Spiel starten" / die
+  unteren Einstellungen wurden abgeschnitten. Kompakt: Logo `1.6rem`, Karten-Padding 8px,
+  `gap: 4px 14px` – der Inhalt rückt nach oben, die Icons oben rechts bleiben fix.
+  **Mitte & rechts enden exakt
   auf Höhe des „Spiel starten"-Knopfs:** das Grid hat vier `auto`-Zeilen
   (`head`/`mode`/`xrules`/`start`) und `align-content: start` – das packt die Zeilen oben
   zusammen (Inhalt rückt nach oben, statt mittig zu schweben) und verhindert, dass die

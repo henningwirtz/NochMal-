@@ -834,9 +834,20 @@ body.mode-notepad .totals { margin-top: 0; }
    Spalten unterschiedlich breit (Mitte am breitesten).
    =========================================================================== */
 @media (orientation: landscape) and (pointer: coarse) {
+  /* Vertikales Body-Padding im Querformat klein halten (nur Safe-Area beachten),
+     damit oben/unten kein Platz verschenkt wird und der Inhalt weiter nach oben rueckt.
+     Die Icons oben rechts (#top-controls) sitzen fix und bleiben unberuehrt. */
+  body {
+    padding-top: max(6px, env(safe-area-inset-top));
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+  }
   #setup-screen:not(.hidden) {
-    max-width: none; height: 100dvh; overflow: hidden;
-    display: grid; gap: 6px 14px;
+    /* Hoehe = Sichtbereich MINUS Body-Padding (sonst ragt der 100dvh-hohe Screen
+       um die Padding-Hoehe nach unten heraus und wird abgeschnitten). */
+    max-width: none; overflow: hidden;
+    height: calc(100dvh - max(6px, env(safe-area-inset-top))
+                        - max(6px, env(safe-area-inset-bottom)));
+    display: grid; gap: 4px 14px;
     grid-template-columns: 0.85fr 1.3fr 1fr;   /* Modus | Einstellungen | Liste */
     grid-template-rows: auto auto auto auto;
     grid-template-areas:
@@ -852,7 +863,7 @@ body.mode-notepad .totals { margin-top: 0; }
   }
   .extra-rules-btn { grid-area: xrules; max-width: none; margin: 0; }
   .setup-head { grid-area: head; margin: 0; }
-  .logo { font-size: 1.8rem; }
+  .logo { font-size: 1.6rem; }
 
   #mode-select {
     grid-area: mode; max-width: none; margin: 0;
@@ -873,8 +884,10 @@ body.mode-notepad .totals { margin-top: 0; }
   #setup-screen > .setup-card:not(#leaderboard-card) {
     grid-area: settings; max-width: none; margin: 0;
     align-self: stretch; min-height: 0; max-height: 100%; overflow-y: auto;
-    padding-top: 10px; padding-bottom: 10px;
+    padding-top: 8px; padding-bottom: 8px;
   }
+  /* Bestenliste enger setzen, damit die rechte Spalte ebenfalls kompakter sitzt. */
+  #leaderboard-card { padding-top: 8px; padding-bottom: 8px; }
   /* Felder enger setzen -> die Einstellungsspalte wird kürzer und passt komplett
      (ohne internen Scroll) auf eine Bildschirmhöhe. */
   .field { margin-bottom: 6px; }
