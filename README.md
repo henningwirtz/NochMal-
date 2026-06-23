@@ -34,7 +34,7 @@ kostenlos über **GitHub Pages**.
 2. Unter „Build and deployment" bei **Source** „Deploy from a branch" wählen,
    **Branch** `main` und Ordner `/ (root)`, dann **Save**.
 3. Nach ein, zwei Minuten erscheint oben die öffentliche Adresse, etwa:
-   `https://<dein-name>.github.io/NochMal-/`
+   `https://<dein-name>.github.io/NochMal/`
 4. Diese Adresse lässt sich sofort in jedem Browser öffnen – auch am Handy.
 
 ### Schritt 2 – Aufs Handy holen
