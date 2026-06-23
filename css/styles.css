@@ -293,9 +293,24 @@ body.mode-notepad .dice-group { flex-wrap: wrap; }
   0%   { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(1.06); }
 }
+
+/* Spielstart-Animation: die Spielblöcke fliegen gestaffelt von unten herein.
+   Die Verzögerung steigt pro Block (--intro-i wird in main.js gesetzt); 'backwards'
+   hält den Block bis zu seinem Start unsichtbar. */
+@keyframes boardIntro {
+  0%   { opacity: 0; transform: translateY(46px) scale(0.9); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.player-board.board-intro {
+  animation: boardIntro 0.5s cubic-bezier(.2,.85,.3,1.05) backwards;
+  animation-delay: calc(var(--intro-i, 0) * 0.09s);
+}
+
 /* Bewegungsempfindliche Nutzer: kein Splash, Spiel startet sofort. */
 @media (prefers-reduced-motion: reduce) {
   .start-splash { display: none; }
+  .player-board.board-intro { animation: none; }
 }
 
 /* ---------- Action bar / message ---------- */

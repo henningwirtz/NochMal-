@@ -214,6 +214,9 @@ function renderLeaderboard() {
 $('edit-scores').addEventListener('click', () => { editScores = !editScores; renderLeaderboard(); });
 renderLeaderboard();
 
+// Würfel-Splash beim Öffnen der App (über dem Startbildschirm).
+playStartSplash();
+
 // Bestenliste immer aktuell halten: Updates aus anderen Tabs/Fenstern sofort
 // uebernehmen und beim Zurueckkehren in die App (PWA aus dem Hintergrund) neu rendern.
 window.addEventListener('storage', (e) => {
@@ -395,13 +398,13 @@ startBtn.addEventListener('click', () => {
   dom.log.replaceChildren();
 
   runGame(game, dom);
-  playStartSplash();
+  playBoardsIntro(); // Spielblöcke fliegen gestaffelt herein
 });
 
-// Kurzes Würfel-Splash beim Spielstart (rein dekorativ). Liegt per position:fixed
-// über dem schon aufgebauten Spiel und blendet nach der Animation weg.
+// Würfel-Splash beim ÖFFNEN der App (rein dekorativ). Liegt per position:fixed über
+// dem Startbildschirm und blendet nach der Animation weg.
 function playStartSplash() {
-  // Bewegungsempfindliche Nutzer: gar nicht einblenden, Spiel ist sofort da.
+  // Bewegungsempfindliche Nutzer: gar nicht einblenden, der Startbildschirm ist sofort da.
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const splash = $('start-splash');
   if (!splash) return;
@@ -411,4 +414,17 @@ function playStartSplash() {
   playRoll(); // kurzer Würfel-Sound (respektiert den Mute-Schalter automatisch)
   // Nach dem Weg-Blenden (splashOut endet ~1,3 s) wieder verstecken.
   setTimeout(() => splash.classList.add('hidden'), 1400);
+}
+
+// Animation beim SPIELSTART: die schon aufgebauten Spielblöcke fliegen gestaffelt von
+// unten herein (CSS-Klasse .board-intro mit pro-Block ansteigender Verzögerung). Die
+// Klasse wird beim nächsten renderBoards ohnehin entfernt (neu erzeugte Karten).
+function playBoardsIntro() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cards = dom.boardContainer.querySelectorAll('.player-board');
+  cards.forEach((card, i) => {
+    card.style.setProperty('--intro-i', i);
+    card.classList.add('board-intro');
+  });
+  if (cards.length) playRoll(); // kurzer Würfel-Sound (respektiert Mute)
 }

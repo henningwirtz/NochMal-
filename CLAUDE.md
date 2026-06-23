@@ -240,14 +240,24 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   rendert die Bestenliste, stellt zuletzt genutzte Einstellungen wieder her, steuert
   Hell/Dunkel-Theme + Ton (oben rechts) und registriert den Service Worker.
   `index.html`, `css/styles.css`.
-  **Start-Animation (Würfel-Splash):** Beim Klick auf „Spiel starten" zeigt
-  `playStartSplash()` (in `main.js`) ein kurzes Vollbild-Overlay `#start-splash`
-  (in `index.html`, sonst `.hidden`): fünf farbige Würfel-Kacheln in den 5 Spielfarben
-  purzeln gestaffelt herein, das „NOCH MAL!"-Logo springt, dann blendet alles weg
-  (rein CSS, `@keyframes splashDieIn`/`splashLogoPop`/`splashOut` in `styles.css`).
-  Das Overlay liegt per `position: fixed` ÜBER dem schon aufgebauten Spiel und wird
-  nach ~1,4 s wieder versteckt; ein kurzer `playRoll()`-Sound begleitet es (respektiert
-  Mute). `prefers-reduced-motion: reduce` blendet es ganz aus (Spiel startet sofort).
+  **Zwei Animationen – App-Öffnen und Spielstart:**
+  - **App-Öffnen (Würfel-Splash):** Beim LADEN der App zeigt `playStartSplash()` (in
+    `main.js`, einmal beim Boot direkt nach `renderLeaderboard()` aufgerufen) ein kurzes
+    Vollbild-Overlay `#start-splash` (in `index.html`, sonst `.hidden`): fünf farbige
+    Würfel-Kacheln in den 5 Spielfarben purzeln gestaffelt herein, das „NOCH MAL!"-Logo
+    springt, dann blendet alles weg (rein CSS, `@keyframes splashDieIn`/`splashLogoPop`/
+    `splashOut` in `styles.css`). Das Overlay liegt per `position: fixed` ÜBER dem
+    Startbildschirm und wird nach ~1,4 s wieder versteckt; ein kurzer `playRoll()`-Sound
+    begleitet es (respektiert Mute; beim App-Öffnen evtl. noch stumm, bis der Browser nach
+    der ersten Geste Audio erlaubt).
+  - **Spielstart (Block-Einflug):** Beim Klick auf „Spiel starten" ruft der Start-Handler
+    nach `runGame(...)` `playBoardsIntro()` (in `main.js`): die schon aufgebauten
+    Spielblöcke (`.player-board` in `#board-container`) fliegen gestaffelt von unten herein
+    (`@keyframes boardIntro`, Klasse `.board-intro` mit `animation-delay: calc(var(--intro-i)
+    * 0.09s)`; `--intro-i` pro Block in `main.js` gesetzt, `backwards` hält jeden Block bis
+    zu seinem Start unsichtbar). Die Klasse verschwindet beim nächsten `renderBoards`
+    automatisch (neu erzeugte Karten) – kein Aufräumen nötig.
+  - Beide respektieren `prefers-reduced-motion: reduce` (dann keine Animation, alles sofort).
   **Tutorial-/Info-Menü** (`#help-toggle`, das „ℹ️"-Icon in `#top-controls` neben
   Theme/Ton): öffnet ein Overlay-Menü `#help-modal` (gleiche Optik/Klassen wie
   `#rules-modal` – `.rules-modal`/`.rules-modal-box`, zusätzlich `.help-box` für

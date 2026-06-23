@@ -8,4 +8,4 @@
 // So muss die Version nur HIER hochgezaehlt werden; der Offline-Cache
 // invalidiert automatisch mit, weil sein Name aus dieser Zeichenkette entsteht.
 // Kurzer, sprechender Name (z. B. '2.2 · Aufraeumen').
-self.APP_VERSION = '5.1 · Wischen & Doppeltipp';
+self.APP_VERSION = '5.2 · Zwei Animationen';
