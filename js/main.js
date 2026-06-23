@@ -224,12 +224,16 @@ window.addEventListener('storage', (e) => {
   if (e.key === SCORES_KEY) renderLeaderboard();
 });
 window.addEventListener('visibilitychange', () => {
-  if (!document.hidden && !$('setup-screen').classList.contains('hidden')) {
-    renderLeaderboard();
-    // PWA aus dem Hintergrund nach vorne geholt = "App geöffnet": Splash erneut zeigen
-    // (nur auf dem Startbildschirm; die Zeit-Sperre verhindert Doppeln mit dem Boot).
-    playStartSplash();
-  }
+  if (!document.hidden && !$('setup-screen').classList.contains('hidden')) renderLeaderboard();
+});
+
+// Würfel-Splash beim Drehen ins Querformat: Da die App nur im Querformat spielbar ist
+// (im Hochformat verdeckt #rotate-prompt alles), ist das Drehen Hoch->Quer am Handy der
+// eigentliche "App öffnen"-Moment. Beim Wechsel auf Querformat den Splash zeigen – nur
+// auf dem Startbildschirm; die Zeit-Sperre in playStartSplash verhindert Doppeln.
+const landscapeMq = window.matchMedia('(orientation: landscape)');
+landscapeMq.addEventListener('change', (e) => {
+  if (e.matches && !$('setup-screen').classList.contains('hidden')) playStartSplash();
 });
 window.addEventListener('focus', () => {
   if (!$('setup-screen').classList.contains('hidden')) renderLeaderboard();
@@ -412,6 +416,10 @@ startBtn.addEventListener('click', () => {
 function playStartSplash() {
   // Bewegungsempfindliche Nutzer: gar nicht einblenden, der Startbildschirm ist sofort da.
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  // Im Hochformat (Touch) verdeckt #rotate-prompt alles – der Splash wäre unsichtbar.
+  // Dann gar nicht abspielen und die Zeit-Sperre NICHT verbrauchen, damit der Splash
+  // beim anschließenden Drehen ins Querformat wirklich erscheint.
+  if (window.matchMedia('(orientation: portrait) and (pointer: coarse)').matches) return;
   // Kurze Sperre: ein schnelles Weg-und-zurück (Hintergrund/Vordergrund) soll den
   // Splash nicht doppelt auslösen; ein normales Öffnen (>3 s Abstand) schon.
   const now = Date.now();

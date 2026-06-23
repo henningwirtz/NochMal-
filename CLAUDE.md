@@ -249,12 +249,17 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
     `splashOut` in `styles.css`). Das Overlay liegt per `position: fixed` ÜBER dem
     Startbildschirm und wird nach ~1,4 s wieder versteckt; ein kurzer `playRoll()`-Sound
     begleitet es (respektiert Mute; beim App-Öffnen evtl. noch stumm, bis der Browser nach
-    der ersten Geste Audio erlaubt). **Läuft auch bei einer aus dem Hintergrund geholten
-    PWA:** weil eine installierte PWA beim „Öffnen" meist NICHT neu geladen wird (kein
-    erneuter Boot), stößt der `visibilitychange`-Listener in `main.js` `playStartSplash()`
-    zusätzlich an, wenn die Seite wieder sichtbar wird UND der Startbildschirm offen ist
-    (nicht mitten im Spiel). Eine kurze Zeit-Sperre (`lastSplashAt`, ~3 s) verhindert
-    dabei doppeltes Abspielen bei schnellem Weg-und-zurück bzw. Doppeln mit dem Boot-Aufruf.
+    der ersten Geste Audio erlaubt). **Läuft auch beim Drehen ins Querformat:** weil eine
+    installierte PWA beim „Öffnen" meist NICHT neu geladen wird (kein erneuter Boot) und das
+    Spiel nur im Querformat läuft (im Hochformat verdeckt `#rotate-prompt` alles), ist das
+    Drehen Hoch→Quer am Handy der eigentliche „App öffnen"-Moment. Ein `matchMedia('(orientation:
+    landscape)')`-`change`-Listener in `main.js` stößt `playStartSplash()` an, wenn auf
+    Querformat gewechselt wird UND der Startbildschirm offen ist (nicht mitten im Spiel).
+    `playStartSplash` spielt im Hochformat-Touch-Fall (`(orientation: portrait) and (pointer:
+    coarse)`) gar nicht ab und verbraucht dort die Zeit-Sperre NICHT (sonst wäre der Splash
+    hinter `#rotate-prompt` unsichtbar und würde den späteren Querformat-Splash blockieren).
+    Eine kurze Zeit-Sperre (`lastSplashAt`, ~3 s) verhindert doppeltes Abspielen (z. B.
+    schnelles Hin-und-her-Drehen bzw. Doppeln mit dem Boot-Aufruf).
   - **Spielstart (Block-Einflug):** Beim Klick auf „Spiel starten" ruft der Start-Handler
     nach `runGame(...)` `playBoardsIntro()` (in `main.js`): die schon aufgebauten
     Spielblöcke (`.player-board` in `#board-container`) fliegen gestaffelt von unten herein
