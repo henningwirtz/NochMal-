@@ -30,13 +30,21 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       selected: [], // [[r,c],...]
     };
 
-    // Drag/Wisch-Zustand: Felder per Ziehen auswählen statt einzeln antippen.
+    // Drag/Wisch-Zustand (nur PvP/Notizblock): Felder per Ziehen auswählen statt einzeln
+    // antippen. Im KI-Modus wird onCellPointerDown NICHT verdrahtet (kein Drag) - dort
+    // dient stattdessen ein Doppeltipp zum Vervollständigen (lastTap*).
     let dragActive = false;
     const dragSeen = new Set();
+    let dragMoved = false;          // ob der Drag mehr als nur das Startfeld berührt hat
+    let dragStart = null;           // Startfeld [r,c]
+    let dragStartSelected = false;  // war das Startfeld schon ausgewählt?
     let suppressNextClick = false;  // blockiert den click-Event am Ende eines Drags
     let currentHighlight = new Set(); // zuletzt berechnetes Highlight-Set (für Drag-Validierung)
     let onPointerMove = null;       // wird nach redraw() gesetzt und in finish() entfernt
     let onPointerUp = null;
+    // KI-Modus: Doppeltipp-Erkennung (zweimal dasselbe Feld kurz hintereinander).
+    let lastTapKey = null;
+    let lastTapTime = 0;
 
     const colorDieById = (id) => game.dice.colorDice.find((d) => d.id === id);
     const numberDieById = (id) => game.dice.numberDice.find((d) => d.id === id);
@@ -161,6 +169,25 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
         return;
       }
       const k = key(r, c);
+
+      // Doppeltipp (KI-Modus): zweimal kurz hintereinander auf dasselbe Feld füllt die
+      // ganze Platzierung - aber nur, wenn sie eindeutig ist. Der erste Tipp hat das Feld
+      // schon ausgewählt; ist die Auswahl damit eindeutig (genau eine passende
+      // Platzierung), wird sie komplettiert. Sonst passiert nichts (Einzelauswahl bleibt).
+      const now = Date.now();
+      const isDouble = k === lastTapKey && now - lastTapTime < 320;
+      lastTapKey = k;
+      lastTapTime = now;
+      if (isDouble) {
+        const consistent = consistentPlacements(currentPlacements());
+        if (consistent.length === 1) {
+          state.selected = consistent[0].map(([rr, cc]) => [rr, cc]);
+          setHint('');
+          redraw();
+        }
+        return;
+      }
+
       const idx = state.selected.findIndex(([rr, cc]) => key(rr, cc) === k);
       if (idx >= 0) {
         state.selected.splice(idx, 1);
@@ -305,7 +332,8 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
         highlight,
         selected: selectedSet,
         onCellClick,
-        onCellPointerDown,
+        // KEIN onCellPointerDown im KI-Modus: dort wird nicht gewischt (würde mit dem
+        // Scrollen mehrerer Blöcke kollidieren). Stattdessen Doppeltipp (s. onCellClick).
       });
 
       // --- Aktionsleiste ----------------------------------------------------
@@ -351,12 +379,18 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       }
     }
 
-    // --- Drag/Wisch-Mechanismus ---------------------------------------------
-    // Startet den Drag auf dem ersten Feld; die eigentliche Auswahl übernimmt click().
+    // --- Drag/Wisch-Mechanismus (nur PvP/Notizblock) ------------------------
+    // Startet den Drag auf dem ersten Feld und wählt es SOFORT mit aus (damit das
+    // Startfeld nicht verloren geht). War es schon gewählt, merken wir es uns für das
+    // Tipp-Toggle in onPointerUp (kurzer Tipp ohne Ziehen = wieder abwählen).
     function onCellPointerDown(r, c) {
       dragActive = true;
+      dragMoved = false;
+      dragStart = [r, c];
       dragSeen.clear();
       dragSeen.add(key(r, c));
+      dragStartSelected = state.selected.some(([sr, sc]) => sr === r && sc === c);
+      if (!dragStartSelected) onCellEnterDrag(r, c);
     }
 
     // Fügt ein Feld während des Drags zur Auswahl hinzu (nur hinzufügen, nie entfernen).
@@ -451,11 +485,21 @@ export function humanTurn(game, playerIndex, dom, renderBoards, control = {}) {
       const k = key(r, c);
       if (dragSeen.has(k)) return;
       dragSeen.add(k);
+      dragMoved = true;
       onCellEnterDrag(r, c);
     };
     onPointerUp = () => {
-      // War der Drag über mehr als ein Feld, den abschließenden click-Event unterdrücken.
-      if (dragActive && dragSeen.size > 1) suppressNextClick = true;
+      if (dragActive) {
+        // Kurzer Tipp (kein Ziehen) auf ein bereits gewähltes Feld = wieder abwählen.
+        if (!dragMoved && dragStartSelected && dragStart) {
+          const [r, c] = dragStart;
+          const idx = state.selected.findIndex(([sr, sc]) => sr === r && sc === c);
+          if (idx >= 0) { state.selected.splice(idx, 1); redraw(); }
+        }
+        // Im PvP läuft die Auswahl komplett über die Pointer-Events; den nachfolgenden
+        // click-Event immer unterdrücken, damit er nicht doppelt toggelt.
+        suppressNextClick = true;
+      }
       dragActive = false;
     };
     dom.boardContainer.addEventListener('pointermove', onPointerMove);

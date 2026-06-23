@@ -215,7 +215,21 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
   den vorigen Zustand wieder her. `renderBoards` = alle Spieler-Blöcke gleichzeitig,
   Log/Ansagen, inline Endwertung), `controls.js` (`humanTurn` = interaktiver Zug,
   nur eigener Block anklickbar; „↶ Feld zurück" wählt einzelne gewählte Felder VOR dem
-  Bestätigen wieder ab + optionaler Zug-Timer),
+  Bestätigen wieder ab + optionaler Zug-Timer.
+  **Feldauswahl je Modus:** Einzeltippen wählt/entwählt überall ein Feld. Im
+  **PvP/Notizblock** kann man zusätzlich über mehrere Felder **wischen** (Drag): das
+  Startfeld wird sofort mitgewählt (`onCellPointerDown` ruft direkt `onCellEnterDrag`),
+  `onPointerMove` fügt jedes neue gültige Feld hinzu, `onPointerUp` unterdrückt den
+  abschließenden Klick (`suppressNextClick`) – ein kurzer Tipp ohne Ziehen auf ein schon
+  gewähltes Feld wählt es wieder ab. Damit ein senkrechter Wisch nicht die Seite scrollt,
+  haben PvP-Felder `touch-action: none` (`body.mode-notepad .cell`). Im **KI-Modus** wird
+  NICHT gewischt (würde mit dem Scrollen mehrerer Blöcke kollidieren – `onCellPointerDown`
+  ist dort nicht verdrahtet, Felder behalten `touch-action: manipulation`); stattdessen
+  füllt ein **Doppeltipp** auf ein Feld die ganze Platzierung, aber nur wenn eindeutig:
+  `onCellClick` erkennt zwei Tipps aufs selbe Feld < 320 ms (`lastTapKey`/`lastTapTime`)
+  und setzt `state.selected` auf die einzige passende Platzierung, falls
+  `consistentPlacements(currentPlacements()).length === 1` (sonst bleibt die Einzelauswahl
+  stehen),
   `storage.js` (localStorage: Bestenliste `recordResults`/`getScores`/`removeScoreAt`/
   `clearScores`, Setup-Einstellungen `loadSettings`/`saveSettings`, globale Präferenzen
   `loadPrefs`/`savePrefs`), `sound.js` (WebAudio-Effekte: `playRoll`/`playMark`/

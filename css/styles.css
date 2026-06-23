@@ -576,6 +576,12 @@ body.light .message { color: #9a6b00; }
 /* (Block) Kein eigener Scrollbalken im Block - das Raster passt sich der Breite an. */
 body.mode-notepad .player-board { overflow: visible; }
 
+/* (Wischen) Im PvP/Notizblock werden Felder per Wischen ausgewählt; touch-action: none
+   verhindert, dass ein auf einem Feld beginnender Wisch stattdessen die Seite pant.
+   Im KI-Modus behalten die Felder touch-action: manipulation (s. u.), damit dort die
+   mehreren Blöcke weiter gescrollt werden können (dort kein Wischen, nur Doppeltipp). */
+body.mode-notepad .cell { touch-action: none; }
+
 /* (Spalten) Nur die Buchstaben-Köpfe (A–O) höher als die Felder, damit man sie
    leichter antippen kann (Antippen streicht/entstreicht den Spalten-Oberwert). Die
    Spielfelder selbst bleiben quadratisch (normale Höhe). */
