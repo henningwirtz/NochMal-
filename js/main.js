@@ -215,6 +215,7 @@ $('edit-scores').addEventListener('click', () => { editScores = !editScores; ren
 renderLeaderboard();
 
 // Würfel-Splash beim Öffnen der App (über dem Startbildschirm).
+let lastSplashAt = 0; // Zeitpunkt des letzten Splashs (gegen Mehrfach-Abspielen)
 playStartSplash();
 
 // Bestenliste immer aktuell halten: Updates aus anderen Tabs/Fenstern sofort
@@ -223,7 +224,12 @@ window.addEventListener('storage', (e) => {
   if (e.key === SCORES_KEY) renderLeaderboard();
 });
 window.addEventListener('visibilitychange', () => {
-  if (!document.hidden && !$('setup-screen').classList.contains('hidden')) renderLeaderboard();
+  if (!document.hidden && !$('setup-screen').classList.contains('hidden')) {
+    renderLeaderboard();
+    // PWA aus dem Hintergrund nach vorne geholt = "App geöffnet": Splash erneut zeigen
+    // (nur auf dem Startbildschirm; die Zeit-Sperre verhindert Doppeln mit dem Boot).
+    playStartSplash();
+  }
 });
 window.addEventListener('focus', () => {
   if (!$('setup-screen').classList.contains('hidden')) renderLeaderboard();
@@ -406,6 +412,11 @@ startBtn.addEventListener('click', () => {
 function playStartSplash() {
   // Bewegungsempfindliche Nutzer: gar nicht einblenden, der Startbildschirm ist sofort da.
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  // Kurze Sperre: ein schnelles Weg-und-zurück (Hintergrund/Vordergrund) soll den
+  // Splash nicht doppelt auslösen; ein normales Öffnen (>3 s Abstand) schon.
+  const now = Date.now();
+  if (now - lastSplashAt < 3000) return;
+  lastSplashAt = now;
   const splash = $('start-splash');
   if (!splash) return;
   splash.classList.remove('hidden');

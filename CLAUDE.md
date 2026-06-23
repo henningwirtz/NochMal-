@@ -249,7 +249,12 @@ Die Engine ist **datengetrieben** – der Spielplan steckt komplett in Daten, ni
     `splashOut` in `styles.css`). Das Overlay liegt per `position: fixed` ÜBER dem
     Startbildschirm und wird nach ~1,4 s wieder versteckt; ein kurzer `playRoll()`-Sound
     begleitet es (respektiert Mute; beim App-Öffnen evtl. noch stumm, bis der Browser nach
-    der ersten Geste Audio erlaubt).
+    der ersten Geste Audio erlaubt). **Läuft auch bei einer aus dem Hintergrund geholten
+    PWA:** weil eine installierte PWA beim „Öffnen" meist NICHT neu geladen wird (kein
+    erneuter Boot), stößt der `visibilitychange`-Listener in `main.js` `playStartSplash()`
+    zusätzlich an, wenn die Seite wieder sichtbar wird UND der Startbildschirm offen ist
+    (nicht mitten im Spiel). Eine kurze Zeit-Sperre (`lastSplashAt`, ~3 s) verhindert
+    dabei doppeltes Abspielen bei schnellem Weg-und-zurück bzw. Doppeln mit dem Boot-Aufruf.
   - **Spielstart (Block-Einflug):** Beim Klick auf „Spiel starten" ruft der Start-Handler
     nach `runGame(...)` `playBoardsIntro()` (in `main.js`): die schon aufgebauten
     Spielblöcke (`.player-board` in `#board-container`) fliegen gestaffelt von unten herein
